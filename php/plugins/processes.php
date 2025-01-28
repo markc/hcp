@@ -10,11 +10,11 @@ final class Plugins_Processes extends Plugin
     {
         elog(__METHOD__);
 
-        $cmd = "ps -eo rss:10,vsz:10,%cpu:5,cmd --sort=rss | grep -v \"^\s\+0\" | cut -c -79";
+        $cmd = "xps -eo rss:10,vsz:10,%cpu:5,cmd --sort=rss | grep -v \"^\s\+0\" | cut -c -79";
         $output = shell_exec($cmd);
 
         if ($output === null || $output === false) {
-            return $this->t->list(['procs' => 'Error: Unable to fetch process information']);
+            util::log('Error: Unable to fetch process information');
         }
 
         return $this->t->list(['procs' => $output]);
