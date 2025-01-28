@@ -10,7 +10,7 @@ final class Plugins_Processes extends Plugin
     {
         elog(__METHOD__);
 
-        $cmd = "xps -eo rss:10,vsz:10,%cpu:5,cmd --sort=rss | grep -v \"^\s\+0\" | cut -c -79";
+        $cmd = "ps -eo rss:10,vsz:10,%cpu:5,cmd --sort=rss | grep -v \"^\s\+0\" | cut -c -79";
         $output = shell_exec($cmd);
 
         if ($output === null || $output === false) {
