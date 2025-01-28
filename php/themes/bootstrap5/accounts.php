@@ -29,7 +29,8 @@ class Themes_Bootstrap5_Accounts extends Themes_Bootstrap5_Theme
 
     public function list(array $in): string
     {
-        elog(__METHOD__ . ' ' . var_export($in, true));
+        elog(__METHOD__);
+        //elog(__METHOD__ . ' ' . var_export($in, true));
 
         extract($in);
         $aclgrp_buf = '';

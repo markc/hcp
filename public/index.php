@@ -24,8 +24,9 @@ spl_autoload_register(function ($c): void {
 echo new Init(new class()
 {
     public $cfg = [
-        'email' => 'markc@renta.net',
-        'file' => __DIR__ . DS . 'lib' . DS . '.ht_conf.php', // settings override
+        'email' => 'admin@example.com',
+        'admpw' => 'admin123',
+        'file' => '../php/.ht_conf.php', // settings override
         'hash' => 'SHA512-CRYPT',
         'host' => '',
         'perp' => 25,
@@ -39,7 +40,8 @@ echo new Init(new class()
         'l' => '',           // Log (message)
         'm' => 'list',       // Method (action)
         'o' => 'home',       // Object (content)
-        't' => 'bootstrap5', // Theme
+        'r' => 'local',      // Remotes (local)
+        't' => 'bootstrap5', // Theme (Default)
         'x' => '',           // XHR (request)
     ];
     public $out = [
@@ -58,8 +60,8 @@ echo new Init(new class()
     public $db = [
         'host' => '127.0.0.1', // DB site
         'name' => 'sysadm',    // DB name
-        'pass' => 'php' . DS . '.ht_pw', // MySQL password override
-        'path' => 'sysadm.db', // SQLite DB
+        'pass' => '../php/.ht_pw', // MySQL password override
+        'path' => '../sysadm/sysadm.db', // SQLite DB
         'port' => '3306',      // DB port
         'sock' => '',          // '/run/mysqld/mysqld.sock',
         'type' => 'sqlite',    // mysql | sqlite
@@ -114,8 +116,8 @@ echo new Init(new class()
         'db' => [
             'host' => '127.0.0.1', // Alt DNS DB site
             'name' => 'pdns',      // Alt DNS DB name
-            'pass' => 'lib' . DS . '.ht_dns_pw', // MySQL DNS password override
-            'path' => 'pdns.db',   // DNS SQLite DB
+            'pass' => '../php/.ht_dns_pw', // MySQL DNS password override
+            'path' => '../sysadm/pdns.db', // DNS SQLite DB
             'port' => '3306',      // Alt DNS DB port
             'sock' => '',          // '/run/mysqld/mysqld.sock',
             'type' => 'sqlite',    // mysql | sqlite | '' to disable

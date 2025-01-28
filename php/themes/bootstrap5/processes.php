@@ -26,8 +26,8 @@ class Themes_Bootstrap5_Processes extends Themes_Bootstrap5_Theme
         </div><!-- END UPPER ROW -->
         <div class="row">
           <div class="col-12">
-            <h5>Process List <small>(' . (count(explode("\n", $in['procs'])) - 1) . ')</small></h5>
-            <pre><code>' . $in['procs'] . '
+            <h5>Process List <small>(' . ($in['procs'] ? (count(explode("\n", $in['procs'])) - 1) : 0) . ')</small></h5>
+            <pre><code>' . ($in['procs'] ?? 'No process data available') . '
             </code></pre>
           </div>
         </div>';

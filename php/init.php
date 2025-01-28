@@ -11,11 +11,12 @@ class Init
     public function __construct(object $g)
     {
         elog(__METHOD__);
+
         session_start();
 
-        elog('GET=' . var_export($_GET, true));
-        elog('POST=' . var_export($_POST, true));
-        elog('SESSION=' . var_export($_SESSION, true));
+        //        elog('GET=' . var_export($_GET, true));
+        //        elog('POST=' . var_export($_POST, true));
+        //        elog('SESSION=' . var_export($_SESSION, true));
 
         //$_SESSION = []; // to reset session for testing
 
@@ -67,6 +68,9 @@ class Init
         elog(__METHOD__);
 
         $g = $this->t->g;
+
+        dbg($g);
+
         $x = $g->in['x'];
         if ('text' === $x) {
             return preg_replace('/^\h*\v+/m', '', strip_tags($g->out['main']));
