@@ -1,0 +1,22 @@
+{
+    "name": "markc/hcp",
+    "description": "Hosting Control Panel",
+    "type": "project",
+    "require": {
+        "php": "^8.4",
+        "league/commonmark": "^2.6.1",
+        "phpseclib/phpseclib": "^3.0.43"
+    },
+    "autoload": {
+        "psr-4": {
+            "HCP\\": "src/",
+            "HCP\\Plugins\\": "src/Plugins/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "license": "AGPL-3.0-or-later"
+}

@@ -13,3 +13,4 @@ rspamd/
 phpliteadmin.*
 .php-cs-fixer.cache
 sysadm/
+vendor/*
