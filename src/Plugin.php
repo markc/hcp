@@ -25,8 +25,8 @@ class Plugin
         $o = $t->g->in['o'];
         $m = $t->g->in['m'];
 
-        if (!util::is_usr() && ('auth' !== $o || ('list' !== $m && 'create' !== $m && 'resetpw' !== $m))) {
-            util::redirect($t->g->cfg['self'] . '?o=auth');
+        if (!util::is_usr() && ('Auth' !== $o || ('list' !== $m && 'create' !== $m && 'resetpw' !== $m))) {
+            util::redirect($t->g->cfg['self'] . '?o=Auth');
         }
 
         $this->t = $t;
@@ -98,7 +98,7 @@ class Plugin
         return $this->read();
     }
 
-    protected function delete(): void
+    protected function delete(): string
     {
         elog(__METHOD__);
 
@@ -107,10 +107,11 @@ class Plugin
                 $res = db::delete([['id', '=', $this->g->in['i']]]);
                 util::log('Item number ' . $this->g->in['i'] . ' removed', 'success');
                 util::relist();
+            } else {
+                util::log('Error deleting item');
             }
         }
-
-        util::log('Error deleting item');
+        return '';
     }
 
     protected function list(): string

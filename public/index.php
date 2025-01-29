@@ -10,28 +10,6 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use HCP\Init;
 
-function dbg($var = null): void
-{
-    if (is_object($var)) {
-        $refobj = new \ReflectionObject($var);
-        // get all public and protected properties
-        $var = $refobj->getProperties(\ReflectionProperty::IS_PUBLIC);
-        $var = \array_merge($var, $refobj->getProperties(\ReflectionProperty::IS_PROTECTED));
-    }
-    ob_start();
-    print_r($var);
-    $ob = ob_get_contents();
-    ob_end_clean();
-    error_log($ob);
-}
-
-function elog(string $content): void
-{
-    if (DBG) {
-        error_log($content);
-    }
-}
-
 echo new Init(new class()
 {
     public $cfg = [
@@ -53,7 +31,7 @@ echo new Init(new class()
         'm' => 'list',              // Method (action)
         'o' => 'Home',              // Object (content)
         'r' => 'local',             // Remotes (local)
-        't' => 'TopNav',        // Theme (Default)
+        't' => 'TopNav',            // Theme (Default)
         'x' => '',                  // XHR (request)
     ];
 
@@ -70,6 +48,8 @@ echo new Init(new class()
         'js'   => '',
         'end'  => '',
     ];
+
+    public $t;
 
     public $db = [
         'host' => '127.0.0.1',      // DB site
@@ -97,18 +77,18 @@ echo new Init(new class()
                 ['Phpmyadmin',  'phpmyadmin/',  'bi bi-globe'],
             ], 'bi bi-list'],
             ['Admin',       [
-                ['Accounts',    '?o=accounts',  'bi bi-people'],
-                ['Vhosts',      '?o=vhosts',    'bi bi-globe'],
-                ['Mailboxes',   '?o=vmails',    'bi bi-envelope'],
-                ['Aliases',     '?o=valias',    'bi bi-envelope-fill'],
-                ['DKIM',        '?o=dkim',      'bi bi-person-vcard'],
-                ['Domains',     '?o=domains',   'bi bi-server'],
+                ['Accounts',    '?o=Accounts',  'bi bi-people'],
+                ['Vhosts',      '?o=Vhosts',    'bi bi-globe'],
+                ['Mailboxes',   '?o=Vmails',    'bi bi-envelope'],
+                ['Aliases',     '?o=Valias',    'bi bi-envelope-fill'],
+                ['DKIM',        '?o=Dkim',      'bi bi-person-vcard'],
+                ['Domains',     '?o=Domains',   'bi bi-server'],
             ], 'bi bi-gear-fill'],
             ['Stats',       [
                 ['Sys Info',    '?o=InfoSys',   'bi bi-speedometer'],
                 ['Processes',   '?o=Processes', 'bi bi-diagram-2'],
-                ['Mail Info',   '?o=infomail',  'bi bi-envelope-fill'],
-                ['Mail Graph',  '?o=mailgraph', 'bi bi-envelope'],
+                ['Mail Info',   '?o=Infomail',  'bi bi-envelope-fill'],
+                ['Mail Graph',  '?o=Mailgraph', 'bi bi-envelope'],
             ], 'bi bi-graph-up'],
         ],
     ];
@@ -152,3 +132,25 @@ echo new Init(new class()
         9 => 'Anonymous',
     ];
 });
+
+function elog(string $content): void
+{
+    if (DBG) {
+        error_log($content);
+    }
+}
+
+function dbg($var = null): void
+{
+    if (is_object($var)) {
+        $refobj = new \ReflectionObject($var);
+        // get all public and protected properties
+        $var = $refobj->getProperties(\ReflectionProperty::IS_PUBLIC);
+        $var = \array_merge($var, $refobj->getProperties(\ReflectionProperty::IS_PROTECTED));
+    }
+    ob_start();
+    print_r($var);
+    $ob = ob_get_contents();
+    ob_end_clean();
+    error_log($ob);
+}

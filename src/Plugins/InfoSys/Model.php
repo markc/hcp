@@ -13,7 +13,7 @@ class Model extends Plugin
 {
     public function list(): string
     {
-        \elog(__METHOD__);
+        elog(__METHOD__);
 
         $mem = $dif = $cpu = [];
         $cpu_name = $procs = '';

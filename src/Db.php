@@ -15,7 +15,8 @@ class Db extends \PDO
     {
         elog(__METHOD__);
 
-        dbg($dbcfg);
+        //dbg($dbcfg);
+
         if (is_null(self::$dbh)) {
             extract($dbcfg);
             $dsn = 'mysql' === $type
@@ -53,7 +54,7 @@ class Db extends \PDO
  INSERT INTO `' . self::$tbl . "` ({$fields})
  VALUES ({$values})";
 
-        elog("sql={$sql}");
+        //elog("sql={$sql}");
 
         try {
             $stm = self::$dbh->prepare($sql);
@@ -84,7 +85,7 @@ class Db extends \PDO
  SELECT {$field}
    FROM `" . self::$tbl . "`{$w} {$extra}";
 
-        elog("sql={$sql}");
+        //elog("sql={$sql}");
 
         return self::qry($sql, $a, $type);
     }
@@ -112,7 +113,7 @@ class Db extends \PDO
  UPDATE `' . self::$tbl . "` SET{$set_str}
   WHERE{$where_str}";
 
-        elog("sql={$sql}");
+        //elog("sql={$sql}");
 
         try {
             $stm = self::$dbh->prepare($sql);
@@ -139,7 +140,7 @@ class Db extends \PDO
  DELETE FROM `' . self::$tbl . "`
   WHERE {$where_str}";
 
-        elog("sql={$sql}");
+        //elog("sql={$sql}");
 
         try {
             $stm = self::$dbh->prepare($sql);
@@ -226,7 +227,7 @@ class Db extends \PDO
             $where .= $where ? " AND ({$extra})" : " WHERE {$extra}";
         }
 
-        elog("where={$where}");
+        //elog("where={$where}");
 
         $query = "
  SELECT {$cols}
@@ -386,7 +387,7 @@ class Db extends \PDO
     {
         elog(__METHOD__);
 
-        elog("sql={$sql}");
+        //elog("sql={$sql}");
 
         // Argument shifting
         if (null === $sql) {

@@ -25,6 +25,10 @@ class Init
         elog(__METHOD__);
 
         session_start();
+
+        //elog(var_export($_SESSION, true));
+        //$_SESSION  = [];
+
         $g->cfg['host'] ??= getenv('HOSTNAME');
         Util::cfg($g);
         $g->in = Util::esc($g->in);
@@ -56,6 +60,9 @@ class Init
             // Fallback to default Theme
             $this->theme = new Theme($g);
         }
+
+        // Assign theme instance to g->t for access in plugins
+        $g->t = $this->theme;
     }
 
     private function processPlugin(object $g): void
@@ -109,6 +116,10 @@ class Init
         }
 
         if ($x) {
+            if ($x === 'html') {
+                return $g->out['main'];
+            }
+
             $out = $g->out[$x] ?? '';
             if ($out) {
                 header('Content-Type: application/json');

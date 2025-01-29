@@ -96,9 +96,7 @@ table.dataTable{border-collapse: collapse !important;}
             $alts .= $msg ? '
             <div class="col-12">
               <div class="alert alert-' . $lvl . ' alert-dismissible fade show" role="alert">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>' . $msg . '
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' . $msg . '
               </div>
             </div>' : '';
         }
@@ -114,15 +112,15 @@ table.dataTable{border-collapse: collapse !important;}
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top bg-dark">
       <div class=container>
         <a class="navbar-brand" href="' . $this->g->cfg['self'] . '">
-          <b><i class="fa fa-server fa-fw"></i> ' . $this->g->out['head'] . '</b>
+          <b><i class="bi bi-server"></i> ' . $this->g->out['head'] . '</b>
         </a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsDefault" aria-controls="navbarsDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsDefault" aria-controls="navbarsDefault" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarsDefault">
-          <ul class="navbar-nav mr-auto">' . $this->g->out['nav1'] . '
+          <ul class="navbar-nav me-auto">' . $this->g->out['nav1'] . '
           </ul>
-          <ul class="navbar-nav ml-auto">' . $this->g->out['nav3'] . '
+          <ul class="navbar-nav ms-auto">' . $this->g->out['nav3'] . '
           </ul>
         </div>
       </div>
@@ -161,13 +159,13 @@ table.dataTable{border-collapse: collapse !important;}
         elog(__METHOD__);
 
         if (Util::is_usr()) {
-            $usr[] = ['Change Profile', '?o=accounts&m=read&i=' . $_SESSION['usr']['id'], 'fas fa-user fa-fw'];
-            $usr[] = ['Change Password', '?o=auth&m=update&i=' . $_SESSION['usr']['id'], 'fas fa-key fa-fw'];
-            $usr[] = ['Sign out', '?o=auth&m=delete', 'fas fa-sign-out-alt fa-fw'];
+            $usr[] = ['Change Profile', '?o=Accounts&m=read&i=' . $_SESSION['usr']['id'], 'fas fa-user fa-fw'];
+            $usr[] = ['Change Password', '?o=Auth&m=update&i=' . $_SESSION['usr']['id'], 'fas fa-key fa-fw'];
+            $usr[] = ['Sign out', '?o=Auth&m=delete', 'fas fa-sign-out-alt fa-fw'];
 
             if (Util::is_adm() && !Util::is_acl(0)) {
                 $usr[] =
-                    ['Switch to sysadm', '?o=accounts&m=switch_user&i=' . $_SESSION['adm'], 'fas fa-user fa-fw'];
+                    ['Switch to sysadm', '?o=Accounts&m=switch_user&i=' . $_SESSION['adm'], 'fas fa-user fa-fw'];
             }
 
             return $this->nav_dropdown([$_SESSION['usr']['login'], $usr, 'fas fa-user fa-fw']);
@@ -185,7 +183,7 @@ table.dataTable{border-collapse: collapse !important;}
 
         return '
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' . $i . $a[0] . '</a>
+              <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' . $i . $a[0] . '</a>
               <div class="dropdown-menu">' . implode('', array_map(function ($n) use ($o) {
             $c = $o === $n[1] ? ' active' : '';
             $i = isset($n[2]) ? '<i class="' . $n[2] . '"></i> ' : '';
@@ -207,7 +205,13 @@ table.dataTable{border-collapse: collapse !important;}
       </div>
     </main>';
     }
-
+    /*
+    public function foot(): string
+    {
+        elog(__METHOD__);
+        return ''; // Override Theme's foot() to prevent extra copyright notice in modals
+    }
+*/
     public function js(): string
     {
         elog(__METHOD__);
@@ -228,7 +232,7 @@ table.dataTable{border-collapse: collapse !important;}
         $hidden = isset($hidden) && $hidden ? $hidden : '';
         $footer = $footer ? '
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                   <button type="submit" class="btn btn-primary">' . $footer . '</button>
                 </div>' : '';
 
@@ -238,9 +242,7 @@ table.dataTable{border-collapse: collapse !important;}
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title">' . $title . '</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <form method="post" action="' . $this->g->cfg['self'] . '">
                 <input type="hidden" name="c" value="' . $_SESSION['c'] . '">
@@ -253,5 +255,28 @@ table.dataTable{border-collapse: collapse !important;}
             </div>
           </div>
         </div>';
+    }
+
+    public function modal_content(): string
+    {
+        elog(__METHOD__);
+
+        return '
+    <div class="modal fade" id="mainModal" tabindex="-1" aria-labelledby="mainModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="mainModalLabel">' . ($this->g->out['modal_title'] ?? 'Modal Title') . '</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">' . ($this->g->out['modal_body'] ?? '') . '
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>' .
+            ($this->g->out['modal_footer'] ?? '') . '
+          </div>
+        </div>
+      </div>
+    </div>';
     }
 }

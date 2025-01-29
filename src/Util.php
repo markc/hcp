@@ -238,12 +238,12 @@ class Util
         [$apiusr, $apikey] = explode(':', $g->in['a'], 2);
 
         if (!self::is_usr($apiusr)) { // if this user has already logged in then avoid extra DB lookup
-            if (is_null(db::$dbh)) {
-                db::$dbh = new db($g->db);
+            if (is_null(Db::$dbh)) {
+                Db::$dbh = new Db($g->Db);
             }
-            db::$tbl = 'accounts';
+            Db::$tbl = 'accounts';
 
-            if ($usr = db::read('id,grp,acl,login,fname,lname,webpw', 'id', $apiusr, '', 'one')) {
+            if ($usr = Db::read('id,grp,acl,login,fname,lname,webpw', 'id', $apiusr, '', 'one')) {
                 if (9 !== $usr['acl']) {
                     if (password_verify(html_entity_decode($apikey, ENT_QUOTES, 'UTF-8'), $usr['webpw'])) {
                         elog("API login for id={$apiusr}");
@@ -271,11 +271,11 @@ class Util
 
         if (!self::is_usr()) {
             if ($c = self::get_cookie('remember')) {
-                if (is_null(db::$dbh)) {
-                    db::$dbh = new db($g->db);
+                if (is_null(Db::$dbh)) {
+                    Db::$dbh = new db($g->db);
                 }
-                db::$tbl = 'accounts';
-                if ($usr = db::read('id,grp,acl,login,fname,lname,cookie', 'cookie', $c, '', 'one')) {
+                Db::$tbl = 'accounts';
+                if ($usr = Db::read('id,grp,acl,login,fname,lname,cookie', 'cookie', $c, '', 'one')) {
                     extract($usr);
                     $_SESSION['usr'] = $usr;
                     if (0 == $acl) {
