@@ -11,6 +11,8 @@ use HCP\Util;
 
 class TopNav extends Theme
 {
+    protected array $defaultNav = [];
+
     public function css(): string
     {
         elog(__METHOD__);
@@ -93,14 +95,19 @@ table.dataTable{border-collapse: collapse !important;}
 
         $alts = '';
         foreach (Util::log() as $lvl => $msg) {
-            $alts .= $msg ? '
+            if ($msg) {
+                $alts .= sprintf(
+                    '
             <div class="col-12">
-              <div class="alert alert-' . $lvl . ' alert-dismissible fade show" role="alert">
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' . $msg . '
+              <div class="alert alert-%s alert-dismissible fade show" role="alert">
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>%s
               </div>
-            </div>' : '';
+            </div>',
+                    $lvl,
+                    $msg
+                );
+            }
         }
-
         return $alts;
     }
 
@@ -108,49 +115,56 @@ table.dataTable{border-collapse: collapse !important;}
     {
         elog(__METHOD__);
 
-        return '
+        return sprintf(
+            '
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top bg-dark">
-      <div class=container>
-        <a class="navbar-brand" href="' . $this->g->cfg['self'] . '">
-          <b><i class="bi bi-server"></i> ' . $this->g->out['head'] . '</b>
+      <div class="container">
+        <a class="navbar-brand" href="%s">
+          <b><i class="bi bi-server" aria-hidden="true"></i> %s</b>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsDefault" aria-controls="navbarsDefault" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarsDefault">
-          <ul class="navbar-nav me-auto">' . $this->g->out['nav1'] . '
-          </ul>
-          <ul class="navbar-nav ms-auto">' . $this->g->out['nav3'] . '
-          </ul>
+          <ul class="navbar-nav me-auto">%s</ul>
+          <ul class="navbar-nav ms-auto">%s</ul>
         </div>
       </div>
-    </nav>';
+    </nav>',
+            $this->g->cfg['self'],
+            $this->g->out['head'],
+            $this->g->out['nav1'],
+            $this->g->out['nav3']
+        );
     }
 
     public function nav1(array $a = []): string
     {
         elog(__METHOD__);
 
-        $a = isset($a[0]) ? $a : Util::get_nav($this->g->nav1);
+        $a = $a[0] ?? Util::get_nav($this->g->nav1);
         $o = '?o=' . $this->g->in['o'];
         $t = '?t=' . Util::ses('t');
 
-        return implode('', array_map(function ($n) use ($o, $t) {
-            if (is_array($n[1])) {
-                return $this->nav_dropdown($n);
-            }
-            $c = $o === $n[1] || $t === $n[1] ? ' active' : '';
-            $i = isset($n[2]) ? '<i class="' . $n[2] . '"></i> ' : '';
-
-            return '
-            <li class="nav-item' . $c . '"><a class="nav-link" href="' . $n[1] . '">' . $i . $n[0] . '</a></li>';
-        }, $a));
+        return implode('', array_map(
+            fn($n) =>
+            is_array($n[1])
+                ? $this->nav_dropdown($n)
+                : sprintf(
+                    '<li class="nav-item%s"><a class="nav-link%s" href="%s">%s%s</a></li>',
+                    $o === $n[1] || $t === $n[1] ? ' active' : '',
+                    $o === $n[1] || $t === $n[1] ? ' active' : '',
+                    $n[1],
+                    $n[2] ?? '' ? '<i class="' . $n[2] . '" aria-hidden="true"></i> ' : '',
+                    $n[0]
+                ),
+            $a
+        ));
     }
 
     public function nav2(): string
     {
         elog(__METHOD__);
-
         return $this->nav_dropdown(['Theme', $this->g->nav2, 'fa fa-th fa-fw']);
     }
 
@@ -158,20 +172,21 @@ table.dataTable{border-collapse: collapse !important;}
     {
         elog(__METHOD__);
 
-        if (Util::is_usr()) {
-            $usr[] = ['Change Profile', '?o=Accounts&m=read&i=' . $_SESSION['usr']['id'], 'fas fa-user fa-fw'];
-            $usr[] = ['Change Password', '?o=Auth&m=update&i=' . $_SESSION['usr']['id'], 'fas fa-key fa-fw'];
-            $usr[] = ['Sign out', '?o=Auth&m=delete', 'fas fa-sign-out-alt fa-fw'];
-
-            if (Util::is_adm() && !Util::is_acl(0)) {
-                $usr[] =
-                    ['Switch to sysadm', '?o=Accounts&m=switch_user&i=' . $_SESSION['adm'], 'fas fa-user fa-fw'];
-            }
-
-            return $this->nav_dropdown([$_SESSION['usr']['login'], $usr, 'fas fa-user fa-fw']);
+        if (!Util::is_usr()) {
+            return '';
         }
 
-        return '';
+        $usr = [
+            ['Change Profile', '?o=Accounts&m=read&i=' . $_SESSION['usr']['id'], 'fas fa-user fa-fw'],
+            ['Change Password', '?o=Auth&m=update&i=' . $_SESSION['usr']['id'], 'fas fa-key fa-fw'],
+            ['Sign out', '?o=Auth&m=delete', 'fas fa-sign-out-alt fa-fw']
+        ];
+
+        if (Util::is_adm() && !Util::is_acl(0)) {
+            $usr[] = ['Switch to sysadm', '?o=Accounts&m=switch_user&i=' . $_SESSION['adm'], 'fas fa-user fa-fw'];
+        }
+
+        return $this->nav_dropdown([$_SESSION['usr']['login'], $usr, 'fas fa-user fa-fw']);
     }
 
     public function nav_dropdown(array $a = []): string
@@ -179,39 +194,41 @@ table.dataTable{border-collapse: collapse !important;}
         elog(__METHOD__);
 
         $o = '?o=' . $this->g->in['o'];
-        $i = isset($a[2]) ? '<i class="' . $a[2] . '"></i> ' : '';
+        $icon = $a[2] ?? '';
 
-        return '
+        return sprintf(
+            '
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' . $i . $a[0] . '</a>
-              <div class="dropdown-menu">' . implode('', array_map(function ($n) use ($o) {
-            $c = $o === $n[1] ? ' active' : '';
-            $i = isset($n[2]) ? '<i class="' . $n[2] . '"></i> ' : '';
-
-            return '
-                <a class="dropdown-item" href="' . $n[1] . '">' . $i . $n[0] . '</a>';
-        }, $a[1])) . '
-              </div>
-            </li>';
+              <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">%s%s</a>
+              <div class="dropdown-menu">%s</div>
+            </li>',
+            $icon ? sprintf('<i class="%s" aria-hidden="true"></i> ', $icon) : '',
+            $a[0],
+            implode('', array_map(fn($n) => sprintf(
+                '
+                <a class="dropdown-item%s" href="%s">%s%s</a>',
+                $o === $n[1] ? ' active' : '',
+                $n[1],
+                $n[2] ?? '' ? sprintf('<i class="%s" aria-hidden="true"></i> ', $n[2]) : '',
+                $n[0]
+            ), $a[1]))
+        );
     }
 
     public function main(): string
     {
         elog(__METHOD__);
 
-        return '
+        return sprintf(
+            '
     <main class="container">
-      <div class="row">' . $this->g->out['log'] . $this->g->out['main'] . '
-      </div>
-    </main>';
+      <div class="row">%s%s</div>
+    </main>',
+            $this->g->out['log'],
+            $this->g->out['main']
+        );
     }
-    /*
-    public function foot(): string
-    {
-        elog(__METHOD__);
-        return ''; // Override Theme's foot() to prevent extra copyright notice in modals
-    }
-*/
+
     public function js(): string
     {
         elog(__METHOD__);
@@ -228,55 +245,44 @@ table.dataTable{border-collapse: collapse !important;}
     {
         elog(__METHOD__);
 
-        extract($ary);
-        $hidden = isset($hidden) && $hidden ? $hidden : '';
-        $footer = $footer ? '
+        ['id' => $id, 'title' => $title, 'body' => $body, 'action' => $action] = $ary;
+        $hidden = $ary['hidden'] ?? '';
+        $footer = isset($ary['footer']) ? sprintf('
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">' . $footer . '</button>
-                </div>' : '';
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    %s
+                </div>', $ary['footer']) : '';
 
-        return '
-        <div class="modal fade" id="' . $id . '" tabindex="-1" role="dialog" aria-labelledby="' . $id . '" aria-hidden="true">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">' . $title . '</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <form method="post" action="' . $this->g->cfg['self'] . '">
-                <input type="hidden" name="c" value="' . $_SESSION['c'] . '">
-                <input type="hidden" name="o" value="' . $this->g->in['o'] . '">
-                <input type="hidden" name="m" value="' . $action . '">
-                <input type="hidden" name="i" value="' . $this->g->in['i'] . '">' . $hidden . '
-                <div class="modal-body">' . $body . '
-                </div>' . $footer . '
-              </form>
+        return sprintf(
+            '
+        <div class="modal fade" id="%1$s" tabindex="-1" aria-labelledby="%1$s-label" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="%1$s-label">%2$s</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="post" action="%3$s">
+                        <input type="hidden" name="c" value="%4$s">
+                        <input type="hidden" name="o" value="%5$s">
+                        <input type="hidden" name="m" value="%6$s">
+                        <input type="hidden" name="i" value="%7$s">%8$s
+                        <div class="modal-body">%9$s</div>
+                        %10$s
+                    </form>
+                </div>
             </div>
-          </div>
-        </div>';
-    }
-
-    public function modal_content(): string
-    {
-        elog(__METHOD__);
-
-        return '
-    <div class="modal fade" id="mainModal" tabindex="-1" aria-labelledby="mainModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="mainModalLabel">' . ($this->g->out['modal_title'] ?? 'Modal Title') . '</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">' . ($this->g->out['modal_body'] ?? '') . '
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>' .
-            ($this->g->out['modal_footer'] ?? '') . '
-          </div>
-        </div>
-      </div>
-    </div>';
+        </div>',
+            $id,
+            $title,
+            $this->g->cfg['self'],
+            $_SESSION['c'],
+            $this->g->in['o'],
+            $action,
+            $this->g->in['i'],
+            $hidden,
+            $body,
+            $footer
+        );
     }
 }

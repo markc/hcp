@@ -20,7 +20,8 @@ class View extends TopNav
             'title'     => 'Create new user',
             'action'    => 'create',
             'body'      => $this->modal_body($in),
-            'footer'    => 'Create'
+            'footer'    => '
+            <button type="submit" class="btn btn-primary">Create</button>'
         ]);
     }
 
