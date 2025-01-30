@@ -4,7 +4,7 @@ declare(strict_types=1);
 // lib/php/themes/bootstrap/theme.php 20150101 - 20250128
 // Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
-namespace HCP;
+namespace HCP\Themes;
 
 use HCP\Theme;
 use HCP\Util;
@@ -87,28 +87,6 @@ table.dataTable{border-collapse: collapse !important;}
   }
 }
     </style>';
-    }
-
-    public function log(): string
-    {
-        elog(__METHOD__);
-
-        $alts = '';
-        foreach (Util::log() as $lvl => $msg) {
-            if ($msg) {
-                $alts .= sprintf(
-                    '
-            <div class="col-12">
-              <div class="alert alert-%s alert-dismissible fade show" role="alert">
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>%s
-              </div>
-            </div>',
-                    $lvl,
-                    $msg
-                );
-            }
-        }
-        return $alts;
     }
 
     public function head(): string
@@ -212,20 +190,6 @@ table.dataTable{border-collapse: collapse !important;}
                 $n[2] ?? '' ? sprintf('<i class="%s" aria-hidden="true"></i> ', $n[2]) : '',
                 $n[0]
             ), $a[1]))
-        );
-    }
-
-    public function main(): string
-    {
-        elog(__METHOD__);
-
-        return sprintf(
-            '
-    <main class="container">
-      <div class="row">%s%s</div>
-    </main>',
-            $this->g->out['log'],
-            $this->g->out['main']
         );
     }
 

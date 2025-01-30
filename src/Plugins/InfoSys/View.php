@@ -6,11 +6,11 @@ declare(strict_types=1);
 
 namespace HCP\Plugins\InfoSys;
 
-use HCP\TopNav;
+use HCP\Themes\TopNav;
 
 class View extends TopNav
 {
-    public function list(array $in): string
+    public function list(array $in = []): string
     {
         elog(__METHOD__);
 

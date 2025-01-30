@@ -1,37 +1,35 @@
 <?php
 
 declare(strict_types=1);
-// lib/php/theme.php 20150101 - 20230604
-// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP;
 
-use HCP\Util;
-
 class Theme
 {
+    protected static string $currentTheme = 'TopNav'; // Default theme
+    protected static ?object $globalG = null;
     private string $buf = '';
-    //private array $in = [];
 
-    public function __construct(public Object $g)
+    public function __construct(public object $g)
     {
         elog(__METHOD__);
-
-        $this->g = $g;
     }
 
     public function __toString(): string
     {
         elog(__METHOD__);
-
         return $this->buf;
     }
 
     public function __call(string $name, array $args): string
     {
         elog(__METHOD__ . '() name = ' . $name . ' class = ' . __CLASS__);
-
         return 'Theme::' . $name . '() not implemented';
+    }
+
+    public function render(string $content, array $in = []): string
+    {
+        return $content;
     }
 
     public function log(): string
@@ -49,7 +47,6 @@ class Theme
     public function nav1(): string
     {
         elog(__METHOD__);
-        //elog(var_export($this->g->nav1, true));
         $o = '?o=' . $this->g->in['o'];
 
         return '
@@ -181,6 +178,28 @@ class Theme
   </body>
 </html>
 ';
+    }
+
+    public static function setGlobal(object $g): void
+    {
+        self::$globalG = $g;
+    }
+
+    public static function setTheme(string $theme): void
+    {
+        $themeClass = "HCP\\Themes\\$theme";
+        if (class_exists($themeClass)) {
+            self::$currentTheme = $theme;
+        }
+    }
+
+    public static function getTheme(): object
+    {
+        if (!self::$globalG) {
+            throw new \RuntimeException('Global object not set. Call Theme::setGlobal() first.');
+        }
+        $themeClass = "HCP\\Themes\\" . self::$currentTheme;
+        return new $themeClass(self::$globalG);
     }
 
     public static function dropdown(

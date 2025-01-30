@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 namespace HCP\Plugins\Accounts;
 
-use HCP\TopNav;
+use HCP\Themes\TopNav;
 use HCP\Db;
 
 class View extends TopNav
@@ -56,7 +56,7 @@ class View extends TopNav
         ]);
     }
 
-    public function list(array $in): string
+    public function list(array $in = []): string
     {
         elog(__METHOD__);
 

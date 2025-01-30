@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 namespace HCP\Plugins\Auth;
 
-use HCP\TopNav;
+use HCP\Themes\TopNav;
 
 class View extends TopNav
 {
@@ -41,7 +41,7 @@ class View extends TopNav
         HTML;
     }
 
-    public function list(array $in): string
+    public function list(array $in = []): string
     {
         elog(__METHOD__);
 

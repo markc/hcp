@@ -10,8 +10,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use HCP\Init;
 
-echo new Init(new class()
-{
+echo new Init(new class() {
     public $cfg = [
         'email' => 'admin@example.com',
         'admpw' => 'admin123',
@@ -31,7 +30,7 @@ echo new Init(new class()
         'm' => 'list',              // Method (action)
         'o' => 'Home',              // Object (content)
         'r' => 'local',             // Remotes (local)
-        't' => 'TopNav',            // Theme (Default)
+        't' => 'SideBar',            // Theme (Default)
         'x' => '',                  // XHR (request)
     ];
 
@@ -135,14 +134,16 @@ echo new Init(new class()
 
 function elog(string $content): void
 {
-    if (DBG) {
+    if (DBG)
+    {
         error_log($content);
     }
 }
 
 function dbg($var = null): void
 {
-    if (is_object($var)) {
+    if (is_object($var))
+    {
         $refobj = new \ReflectionObject($var);
         // get all public and protected properties
         $var = $refobj->getProperties(\ReflectionProperty::IS_PUBLIC);

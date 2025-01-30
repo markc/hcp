@@ -14,3 +14,4 @@ phpliteadmin.*
 .php-cs-fixer.cache
 sysadm/
 vendor/*
+public/php_error.log
