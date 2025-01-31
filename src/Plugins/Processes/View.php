@@ -6,9 +6,9 @@ declare(strict_types=1);
 
 namespace HCP\Plugins\Processes;
 
-use HCP\Themes\TopNav;
+use HCP\Theme;
 
-class View extends TopNav
+class View extends Theme
 {
     public function list(array $in = []): string
     {

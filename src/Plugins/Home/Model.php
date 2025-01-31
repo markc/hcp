@@ -14,11 +14,10 @@ class Model extends Plugin
     {
         elog(__METHOD__);
 
-        if (file_exists('Home.tpl')) {
+        if (file_exists('Home.tpl'))
+        {
             ob_start();
-
             include 'Home.tpl';
-
             return ob_get_clean();
         }
 

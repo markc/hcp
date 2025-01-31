@@ -9,7 +9,7 @@ namespace HCP\Themes;
 use HCP\Theme;
 use HCP\Util;
 
-class TopNav extends Theme
+class TopNav extends Basic
 {
     protected array $defaultNav = [];
 
@@ -143,6 +143,7 @@ table.dataTable{border-collapse: collapse !important;}
     public function nav2(): string
     {
         elog(__METHOD__);
+
         return $this->nav_dropdown(['Theme', $this->g->nav2, 'fa fa-th fa-fw']);
     }
 
@@ -150,7 +151,8 @@ table.dataTable{border-collapse: collapse !important;}
     {
         elog(__METHOD__);
 
-        if (!Util::is_usr()) {
+        if (!Util::is_usr())
+        {
             return '';
         }
 
@@ -160,7 +162,8 @@ table.dataTable{border-collapse: collapse !important;}
             ['Sign out', '?o=Auth&m=delete', 'fas fa-sign-out-alt fa-fw']
         ];
 
-        if (Util::is_adm() && !Util::is_acl(0)) {
+        if (Util::is_adm() && !Util::is_acl(0))
+        {
             $usr[] = ['Switch to sysadm', '?o=Accounts&m=switch_user&i=' . $_SESSION['adm'], 'fas fa-user fa-fw'];
         }
 
@@ -191,6 +194,17 @@ table.dataTable{border-collapse: collapse !important;}
                 $n[0]
             ), $a[1]))
         );
+    }
+
+    public function main(): string
+    {
+        elog(__METHOD__);
+
+        return '
+    <main class="container">
+      <div class="row">' . $this->g->out['log'] . $this->g->out['main'] . '
+      </div>
+    </main>';
     }
 
     public function js(): string

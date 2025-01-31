@@ -4,143 +4,148 @@ declare(strict_types=1);
 
 namespace HCP;
 
-use HCP\Config\AppConfig;
-use HCP\Http\Request;
-use HCP\Http\Response;
-use HCP\Plugin\PluginManager;
 use HCP\Util;
 
 class Init
 {
-    private object $theme;
-    private Request $request;
-    private Response $response;
-    private AppConfig $config;
-    private PluginManager $pluginManager;
+    private $t;
 
-    public function __construct(object $g)
+    public function __construct(public object $g)
     {
         elog(__METHOD__);
 
-        $this->initializeCore($g);
-        $this->processRequest($g);
-        $this->processOutput($g);
-    }
-
-    private function initializeCore(object $g): void
-    {
-        $this->config = AppConfig::getInstance($g->cfg);
-        $this->request = new Request();
-        $this->response = new Response();
-        $this->pluginManager = new PluginManager();
-
-        $this->initializeSession($g);
-        Theme::setGlobal($g);
-
-        if (!empty($g->in['t'])) {
-            Theme::setTheme($g->in['t']);
-        }
-        $this->loadTheme($g);
-    }
-
-    private function initializeSession(object $g): void
-    {
-        elog(__METHOD__);
+        $this->g = $g;
 
         session_start();
 
-        $g->cfg['host'] ??= getenv('HOSTNAME');
-        Util::cfg($g);
-        $g->in = Util::esc($g->in);
-        $g->cfg['self'] = str_replace('index.php', '', $this->request->getServerParam('PHP_SELF'));
+        elog('GET=' . var_export($_GET, true));
+        elog('POST=' . var_export($_POST, true));
 
-        if (!isset($_SESSION['c'])) {
+        $g->cfg['host'] ??= getenv('HOSTNAME');
+
+        Util::cfg($g);
+
+        $g->in = Util::esc($g->in);
+
+        $g->cfg['self'] = str_replace('index.php', '', $_SERVER['PHP_SELF']);
+
+        if (!isset($_SESSION['c']))
+        {
             $_SESSION['c'] = Util::random_token(32);
         }
 
-        // Session variables
         Util::ses('o');
         Util::ses('m');
         Util::ses('l');
-    }
 
-    private function loadTheme(object $g): void
-    {
-        elog(__METHOD__);
+        //        $t = Util::ses('t', '', $g->in['t']);
+        $t = Util::ses('t', $g->in['t']);
+        elog("t=$t");
 
-        $currentPlugin = $g->in['o'];
-        $viewClass = "HCP\\Plugins\\{$currentPlugin}\\View";
+        $t1 = "HCP\\Plugins\\{$g->in['o']}\\View";
+        elog("t1=$t1");
 
-        elog(__METHOD__ . " viewClass=$viewClass");
+        $t2 = "HCP\\Themes\\$t";
+        elog("t2=$t2");
 
-        // Try to load plugin-specific view
-        if (class_exists($viewClass)) {
-            $this->theme = new $viewClass($g);
-        } else {
-            // Fallback to TopNav theme
-            $this->theme = Theme::getTheme();
+        $this->t = $g->t = $thm = class_exists($t1)
+            ? new $t1($g)
+            : new Theme($g);
+
+        if (class_exists($t2))
+        {
+            $thm->themeImpl = new $t2($g);
         }
 
-        // Assign theme instance to g->t for access in plugins
-        $g->t = $this->theme;
-    }
+        $p = "HCP\\Plugins\\{$g->in['o']}\\Model";
 
-    private function processRequest(object $g): void
-    {
-        elog(__METHOD__);
-
-        $pluginName = $g->in['o'];
-        $plugin = $this->pluginManager->loadPlugin($pluginName, $this->theme);
-
-        if ($plugin) {
+        if (class_exists($p))
+        {
             $g->in['a'] ? Util::chkapi($g) : Util::remember($g);
-            $g->out['main'] = (string) $plugin;
-        } else {
+            $g->out['main'] = (string) new $p($thm);
+        }
+        else
+        {
             $g->out['main'] = 'Error: no plugin object!';
         }
-    }
 
-    private function processOutput(object $g): void
-    {
-        elog(__METHOD__);
-
-        if (empty($g->in['x'])) {
-            foreach ($g->out as $k => $v) {
-                $g->out[$k] = method_exists($this->theme, $k) ? $this->theme->{$k}() : $v;
-            }
-        }
-
-        $x = $g->in['x'];
-        $content = '';
-
-        if ('text' === $x) {
-            $content = preg_replace('/^\h*\v+/m', '', strip_tags($g->out['main']));
-            $this->response->text($content);
-        } elseif ('json' === $x) {
-            $this->response->json($g->out['main']);
-        } elseif ($x) {
-            if ($x === 'html') {
-                $this->response->html($g->out['main']);
-            } else {
-                $out = $g->out[$x] ?? '';
-                if ($out) {
-                    $this->response->json($out);
+        if (empty($g->in['x']))
+        {
+            if ($thm->themeImpl)
+            {
+                foreach ($g->out as $k => $v)
+                {
+                    $g->out[$k] = method_exists($thm->themeImpl, $k)
+                        ? $thm->themeImpl->{$k}()
+                        : (method_exists($thm, $k) ? $thm->{$k}() : $v);
                 }
             }
-        } else {
-            $this->response->html($this->theme->html());
+            else
+            {
+                foreach ($g->out as $k => $v)
+                {
+                    $g->out[$k] = method_exists($thm, $k) ? $thm->{$k}() : $v;
+                }
+            }
         }
     }
 
     public function __destruct()
     {
-        elog(__FILE__ . ' ' . $this->request->getServerParam('REMOTE_ADDR') . ' ' .
-            round((microtime(true) - $this->request->getServerParam('REQUEST_TIME_FLOAT')), 4) . "\n");
+        elog(__METHOD__ . ' SESSION=' . var_export($_SESSION, true));
+        elog(__FILE__ . ' ' . $_SERVER['REMOTE_ADDR'] . ' ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']), 4) . "\n");
     }
 
     public function __toString(): string
     {
         elog(__METHOD__);
-        return $this->response->getContent();
+        $g = $this->g;
+        $x = $g->in['x'];
+
+        if ('text' === $x)
+        {
+            return preg_replace('/^\h*\v+/m', '', strip_tags($g->out['main']));
+        }
+
+        if ('json' === $x)
+        {
+            header('Content-Type: application/json');
+            return $g->out['main'];
+        }
+
+        if ($x)
+        {
+            $out = $g->out[$x] ?? '';
+            if ($out)
+            {
+                header('Content-Type: application/json');
+                return json_encode($out, JSON_PRETTY_PRINT);
+            }
+        }
+
+        return $this->t->html();
+    }
+}
+
+function dbg($var = null): void
+{
+    if (is_object($var))
+    {
+        $refobj = new \ReflectionObject($var);
+        $var = $refobj->getProperties(\ReflectionProperty::IS_PUBLIC);
+        $var = \array_merge($var, $refobj->getProperties(\ReflectionProperty::IS_PROTECTED));
+    }
+    ob_start();
+    print_r($var);
+    $ob = ob_get_contents();
+    ob_end_clean();
+    error_log($ob);
+}
+
+function elog(string $content): void
+{
+    if (DBG)
+    {
+        error_log($content);
     }
 }

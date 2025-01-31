@@ -10,7 +10,8 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use HCP\Init;
 
-echo new Init(new class() {
+echo new Init(new class()
+{
     public $cfg = [
         'email' => 'admin@example.com',
         'admpw' => 'admin123',
@@ -30,7 +31,7 @@ echo new Init(new class() {
         'm' => 'list',              // Method (action)
         'o' => 'Home',              // Object (content)
         'r' => 'local',             // Remotes (local)
-        't' => 'SideBar',            // Theme (Default)
+        't' => 'Basic',             // Theme (Default)
         'x' => '',                  // XHR (request)
     ];
 

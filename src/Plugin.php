@@ -15,13 +15,13 @@ abstract class Plugin
     protected string $tbl = '';
     protected array $in = [];
     protected object $g;
-    protected AppConfig $config;
+    //protected AppConfig $config;
 
     public function __construct(public object $t)
     {
         elog(__METHOD__);
 
-        $this->config = AppConfig::getInstance();
+        //$this->config = AppConfig::getInstance();
         $this->t = $t;
         $this->g = $t->g;
         $this->in = Util::esc($this->in);
@@ -32,10 +32,16 @@ abstract class Plugin
 
     protected function initializeDatabase(): void
     {
-        if ($this->tbl) {
-            if (!is_null($this->dbh)) {
+        elog(__METHOD__);
+
+        if ($this->tbl)
+        {
+            if (!is_null($this->dbh))
+            {
                 Db::$dbh = $this->dbh;
-            } elseif (is_null(Db::$dbh)) {
+            }
+            elseif (is_null(Db::$dbh))
+            {
                 Db::$dbh = new Db($this->t->g->db);
             }
             Db::$tbl = $this->tbl;
@@ -44,10 +50,15 @@ abstract class Plugin
 
     protected function processAction(): void
     {
+        elog(__METHOD__);
+
         $method = $this->g->in['m'];
-        if (method_exists($this, $method)) {
+        if (method_exists($this, $method))
+        {
             $this->buf .= $this->{$method}();
-        } else {
+        }
+        else
+        {
             $this->buf .= 'Method not found: ' . $method;
         }
     }
@@ -55,6 +66,7 @@ abstract class Plugin
     public function __toString(): string
     {
         elog(__METHOD__);
+
         return $this->buf;
     }
 
@@ -62,7 +74,8 @@ abstract class Plugin
     {
         elog(__METHOD__);
 
-        if (Util::is_post()) {
+        if (Util::is_post())
+        {
             $this->in['updated'] = date('Y-m-d H:i:s');
             $this->in['created'] = date('Y-m-d H:i:s');
             $lid = Db::create($this->in);
@@ -82,12 +95,16 @@ abstract class Plugin
     {
         elog(__METHOD__);
 
-        if (Util::is_post()) {
+        if (Util::is_post())
+        {
             $this->in['updated'] = date('Y-m-d H:i:s');
-            if (Db::update($this->in, [['id', '=', $this->g->in['i']]])) {
+            if (Db::update($this->in, [['id', '=', $this->g->in['i']]]))
+            {
                 Util::log('Item number ' . $this->g->in['i'] . ' updated', 'success');
                 Util::relist();
-            } else {
+            }
+            else
+            {
                 Util::log('Error updating item.');
             }
         }
@@ -98,12 +115,16 @@ abstract class Plugin
     {
         elog(__METHOD__);
 
-        if (Util::is_post()) {
-            if ($this->g->in['i']) {
+        if (Util::is_post())
+        {
+            if ($this->g->in['i'])
+            {
                 Db::delete([['id', '=', $this->g->in['i']]]);
                 Util::log('Item number ' . $this->g->in['i'] . ' removed', 'success');
                 Util::relist();
-            } else {
+            }
+            else
+            {
                 Util::log('Error deleting item');
             }
         }
@@ -121,7 +142,8 @@ abstract class Plugin
         $o = $this->t->g->in['o'];
         $m = $this->t->g->in['m'];
 
-        if (!Util::is_usr() && ('Auth' !== $o || !in_array($m, ['list', 'create', 'resetpw']))) {
+        if (!Util::is_usr() && ('Auth' !== $o || !in_array($m, ['list', 'create', 'resetpw'])))
+        {
             Util::redirect($this->t->g->cfg['self'] . '?o=Auth');
             return false;
         }

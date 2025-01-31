@@ -14,9 +14,12 @@ class Util
     {
         elog(__METHOD__);
 
-        if ($msg) {
+        if ($msg)
+        {
             $_SESSION['log'][$lvl] = empty($_SESSION['log'][$lvl]) ? $msg : $_SESSION['log'][$lvl] . '<br>' . $msg;
-        } elseif (isset($_SESSION['log']) and $_SESSION['log']) {
+        }
+        elseif (isset($_SESSION['log']) and $_SESSION['log'])
+        {
             $l = $_SESSION['log'];
             $_SESSION['log'] = [];
 
@@ -37,7 +40,8 @@ class Util
     {
         elog(__METHOD__);
 
-        foreach ($in as $k => $v) {
+        foreach ($in as $k => $v)
+        {
             $in[$k] = isset($_REQUEST[$k]) && !is_array($_REQUEST[$k])
                 ? self::enc($_REQUEST[$k]) : $v;
         }
@@ -45,25 +49,49 @@ class Util
         return $in;
     }
 
-    // TODO please document what $k, $v and $x are for?
     public static function ses(string $k, string $v = '', ?string $x = null): string
     {
         elog(__METHOD__ . "({$k}, {$v}, {$x})");
 
-        return $_SESSION[$k] =
-            (!is_null($x) && (!isset($_SESSION[$k]) || ($_SESSION[$k] != $x))) ? $x : (((isset($_REQUEST[$k]) && !isset($_SESSION[$k]))
-                || (isset($_REQUEST[$k], $_SESSION[$k])
-                    && ($_REQUEST[$k] != $_SESSION[$k])))
-                ? self::enc($_REQUEST[$k])
-                : ($_SESSION[$k] ?? $v));
+        return $_SESSION[$k] = (isset($_REQUEST[$k]))
+            ? self::enc($_REQUEST[$k])
+            : (isset($_SESSION[$k])
+                ? $_SESSION[$k]
+                : ($x ?? $v));
     }
 
+    /*
+    public static function ses(string $key, string $default = '', ?string $newValue = null): string
+    {
+        elog(__METHOD__ . "({$key}, {$default}, {$newValue})");
+
+        // If explicit new value provided, always update
+        if ($newValue !== null)
+        {
+            return $_SESSION[$key] = $newValue;
+        }
+
+        // If value exists in REQUEST and differs from session, update
+        if (
+            isset($_REQUEST[$key]) &&
+            (!isset($_SESSION[$key]) || $_REQUEST[$key] !== $_SESSION[$key])
+        )
+        {
+            return $_SESSION[$key] = self::enc($_REQUEST[$key]);
+        }
+
+        // Otherwise return existing session value or default
+        return $_SESSION[$key] ?? $default;
+    }
+    */
     public static function cfg(object $g): void
     {
         elog(__METHOD__);
 
-        if (file_exists($g->cfg['file'])) {
-            foreach (include $g->cfg['file'] as $k => $v) {
+        if (file_exists($g->cfg['file']))
+        {
+            foreach (include $g->cfg['file'] as $k => $v)
+            {
                 $g->{$k} = array_merge($g->{$k}, $v);
             }
         }
@@ -90,15 +118,18 @@ class Util
     {
         elog(__METHOD__);
 
-        if (!is_numeric($date1)) {
+        if (!is_numeric($date1))
+        {
             $date1 = strtotime($date1);
         }
-        if ($date2 and !is_numeric($date2)) {
+        if ($date2 and !is_numeric($date2))
+        {
             $date2 = strtotime($date2);
         }
         $date2 ??= time();
         $diff = abs($date1 - $date2);
-        if ($diff < 10) {
+        if ($diff < 10)
+        {
             return ' just now';
         }
 
@@ -115,11 +146,14 @@ class Util
         $current_level = 1;
         $result = [];
 
-        foreach ($blocks as $block) {
-            if ($current_level > $levels) {
+        foreach ($blocks as $block)
+        {
+            if ($current_level > $levels)
+            {
                 break;
             }
-            if ($diff / $block['v'] >= 1) {
+            if ($diff / $block['v'] >= 1)
+            {
                 $amount = floor($diff / $block['v']);
                 $plural = ($amount > 1) ? 's' : '';
                 $result[] = $amount . ' ' . $block['k'] . $plural;
@@ -203,28 +237,44 @@ class Util
     {
         elog(__METHOD__);
 
-        if (strlen($pw) > 11) {
-            if (preg_match('/[0-9]+/', $pw)) {
-                if (preg_match('/[A-Z]+/', $pw)) {
-                    if (preg_match('/[a-z]+/', $pw)) {
-                        if ($pw2) {
-                            if ($pw === $pw2) {
+        if (strlen($pw) > 11)
+        {
+            if (preg_match('/[0-9]+/', $pw))
+            {
+                if (preg_match('/[A-Z]+/', $pw))
+                {
+                    if (preg_match('/[a-z]+/', $pw))
+                    {
+                        if ($pw2)
+                        {
+                            if ($pw === $pw2)
+                            {
                                 return true;
                             }
                             util::log('Passwords do not match, please try again');
-                        } else {
+                        }
+                        else
+                        {
                             return true;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         util::log('Password must contains at least one lower case letter');
                     }
-                } else {
+                }
+                else
+                {
                     util::log('Password must contains at least one captital letter');
                 }
-            } else {
+            }
+            else
+            {
                 util::log('Password must contains at least one number');
             }
-        } else {
+        }
+        else
+        {
             util::log('Passwords must be at least 12 characters');
         }
 
@@ -237,30 +287,44 @@ class Util
 
         [$apiusr, $apikey] = explode(':', $g->in['a'], 2);
 
-        if (!self::is_usr($apiusr)) { // if this user has already logged in then avoid extra DB lookup
-            if (is_null(Db::$dbh)) {
+        if (!self::is_usr($apiusr))
+        { // if this user has already logged in then avoid extra DB lookup
+            if (is_null(Db::$dbh))
+            {
                 Db::$dbh = new Db($g->Db);
             }
             Db::$tbl = 'accounts';
 
-            if ($usr = Db::read('id,grp,acl,login,fname,lname,webpw', 'id', $apiusr, '', 'one')) {
-                if (9 !== $usr['acl']) {
-                    if (password_verify(html_entity_decode($apikey, ENT_QUOTES, 'UTF-8'), $usr['webpw'])) {
+            if ($usr = Db::read('id,grp,acl,login,fname,lname,webpw', 'id', $apiusr, '', 'one'))
+            {
+                if (9 !== $usr['acl'])
+                {
+                    if (password_verify(html_entity_decode($apikey, ENT_QUOTES, 'UTF-8'), $usr['webpw']))
+                    {
                         elog("API login for id={$apiusr}");
                         $_SESSION['usr'] = $usr;
-                        if (0 == $usr['acl']) {
+                        if (0 == $usr['acl'])
+                        {
                             $_SESSION['adm'] = $apiusr;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         exit('Invalid Email Or Password');
                     }
-                } else {
+                }
+                else
+                {
                     exit('Account is disabled, contact your System Administrator');
                 }
-            } else {
+            }
+            else
+            {
                 exit('Invalid Email Or Password');
             }
-        } else {
+        }
+        else
+        {
             elog("API id={$apiusr} is already logged in");
         }
     }
@@ -269,16 +333,21 @@ class Util
     {
         elog(__METHOD__);
 
-        if (!self::is_usr()) {
-            if ($c = self::get_cookie('remember')) {
-                if (is_null(Db::$dbh)) {
+        if (!self::is_usr())
+        {
+            if ($c = self::get_cookie('remember'))
+            {
+                if (is_null(Db::$dbh))
+                {
                     Db::$dbh = new db($g->db);
                 }
                 Db::$tbl = 'accounts';
-                if ($usr = Db::read('id,grp,acl,login,fname,lname,cookie', 'cookie', $c, '', 'one')) {
+                if ($usr = Db::read('id,grp,acl,login,fname,lname,cookie', 'cookie', $c, '', 'one'))
+                {
                     extract($usr);
                     $_SESSION['usr'] = $usr;
-                    if (0 == $acl) {
+                    if (0 == $acl)
+                    {
                         $_SESSION['adm'] = $id;
                     }
                     self::log($login . ' is remembered and logged back in', 'success');
@@ -293,13 +362,16 @@ class Util
     {
         elog(__METHOD__ . "({$url})");
 
-        if ('refresh' == $method) {
+        if ('refresh' == $method)
+        {
             header('refresh:' . $ttl . '; url=' . $url);
             echo '<!DOCTYPE html>
 <title>Redirect...</title>
 <h2 style="text-align:center">Redirecting in ' . $ttl . ' seconds...</h2>
 <pre style="width:50em;margin:0 auto;">' . $msg . '</pre>';
-        } else {
+        }
+        else
+        {
             header('Location:' . $url);
         }
 
@@ -317,19 +389,24 @@ class Util
     {
         elog(__METHOD__);
 
-        if (0 == $size) {
+        if (0 == $size)
+        {
             return '0';
         }
-        if ($size >= 1000000000000) {
+        if ($size >= 1000000000000)
+        {
             return round(($size / 1000000000000), $precision ?? 3) . ' TB';
         }
-        if ($size >= 1000000000) {
+        if ($size >= 1000000000)
+        {
             return round(($size / 1000000000), $precision ?? 2) . ' GB';
         }
-        if ($size >= 1000000) {
+        if ($size >= 1000000)
+        {
             return round(($size / 1000000), $precision ?? 1) . ' MB';
         }
-        if ($size >= 1000) {
+        if ($size >= 1000)
+        {
             return round(($size / 1000), $precision ?? 0) . ' KB';
         }
 
@@ -341,7 +418,8 @@ class Util
     {
         elog(__METHOD__);
 
-        if (0 == $size) {
+        if (0 == $size)
+        {
             return '0';
         }
         $base = log($size, 1024);
@@ -386,8 +464,10 @@ class Util
     {
         elog(__METHOD__);
 
-        if ('POST' === $_SERVER['REQUEST_METHOD']) {
-            if (!isset($_POST['c']) || $_SESSION['c'] !== $_POST['c']) {
+        if ('POST' === $_SERVER['REQUEST_METHOD'])
+        {
+            if (!isset($_POST['c']) || $_SESSION['c'] !== $_POST['c'])
+            {
                 self::log('Possible CSRF attack');
                 self::redirect('?o=' . $_SESSION['o'] . '&m=list');
             }
@@ -420,7 +500,8 @@ class Util
         $random_base64 = base64_encode(random_bytes($length));
         $random_base64 = str_replace(['+', '/', '='], '', $random_base64);
 
-        if (strlen($random_base64) < $length) {
+        if (strlen($random_base64) < $length)
+        {
             return self::random_token($length);
         }
 

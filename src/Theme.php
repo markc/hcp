@@ -1,35 +1,41 @@
 <?php
 
 declare(strict_types=1);
+// lib/php/theme.php 20150101 - 20230604
+// Copyright (C) 2015-2023 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP;
 
 class Theme
 {
-    protected static string $currentTheme = 'TopNav'; // Default theme
-    protected static ?object $globalG = null;
     private string $buf = '';
+    public ?object $themeImpl = null;
 
-    public function __construct(public object $g)
+    public function __construct(public Object $g)
     {
         elog(__METHOD__);
+
+        $this->g = $g;
     }
 
     public function __toString(): string
     {
         elog(__METHOD__);
+
         return $this->buf;
     }
 
     public function __call(string $name, array $args): string
     {
         elog(__METHOD__ . '() name = ' . $name . ' class = ' . __CLASS__);
-        return 'Theme::' . $name . '() not implemented';
-    }
 
-    public function render(string $content, array $in = []): string
-    {
-        return $content;
+        // Only check themeImpl if the method doesn't exist in current class
+        if (!method_exists($this, $name) && $this->themeImpl && method_exists($this->themeImpl, $name))
+        {
+            return $this->themeImpl->$name(...$args);
+        }
+
+        return 'Theme::' . $name . '() not implemented';
     }
 
     public function log(): string
@@ -37,87 +43,34 @@ class Theme
         elog(__METHOD__);
 
         $alts = '';
-        foreach (util::log() as $lvl => $msg) {
+        foreach (util::log() as $lvl => $msg)
+        {
             $alts .= $msg ? '<p class="alert ' . $lvl . '">' . $msg . "</p>\n" : '';
         }
 
         return $alts;
     }
 
-    public function nav1(): string
+    public function nav1(array $a = []): string
     {
         elog(__METHOD__);
-        $o = '?o=' . $this->g->in['o'];
 
-        return '
-      <nav>' . implode('', array_map(function ($n) use ($o) {
-            $c = $o === $n[1] ? ' class="active"' : '';
+        $a = isset($a[0]) ? $a : util::get_nav($this->g->nav1);
+        $o = '?o=' . $this->g->in['o'];
+        $t = '?t=' . util::ses('t');
+
+        return implode('', array_map(function ($n) use ($o, $t)
+        {
+            if (is_array($n[1]))
+            {
+                return $this->nav_dropdown($n);
+            }
+            $c = $o === $n[1] || $t === $n[1] ? ' active' : '';
+            $i = isset($n[2]) ? '<i class="' . $n[2] . '"></i> ' : '';
 
             return '
-        <a' . $c . ' href="' . $n[1] . '">' . $n[0] . '</a>';
-        }, $this->g->nav1)) . '
-      </nav>';
-    }
-
-    public function nav12(): string
-    {
-        elog(__METHOD__);
-
-        $o = '?o=' . $this->g->in['o'];
-        $links = '';
-
-        // Get the current role's navigation items
-        $role = $this->g->in['r'] ?? 'non'; // Get role from input
-        $items = $this->g->nav1[$role] ?? [];
-
-        foreach ($items as $item) {
-            if (!is_array($item) || count($item) < 3) {
-                continue;
-            }
-
-            [$label, $link, $icon] = $item;
-
-            // Handle regular links vs dropdown menus
-            if (is_array($link)) {
-                // This is a dropdown menu
-                $submenu = '';
-                foreach ($link as $subitem) {
-                    if (!is_array($subitem) || count($subitem) < 3) {
-                        continue;
-                    }
-                    [$sublabel, $sublink, $subicon] = $subitem;
-                    $subiconHtml = $subicon ? '<i class="' . htmlspecialchars($subicon) . '"></i> ' : '';
-                    $submenu .= '
-          <a class="dropdown-item" href="' . htmlspecialchars($sublink) . '">' . $subiconHtml . htmlspecialchars($sublabel) . '</a>';
-                }
-
-                $iconHtml = $icon ? '<i class="' . htmlspecialchars($icon) . '"></i> ' : '';
-                $links .= '
-        <div class="dropdown">
-          <a class="dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            ' . $iconHtml . htmlspecialchars($label) . '
-          </a>
-          <div class="dropdown-menu">' . $submenu . '
-          </div>
-        </div>';
-            } else {
-                // This is a regular link
-                $href = $link;
-                if (strpos($href, '?') === false && strpos($href, '/') !== 0) {
-                    $href = '/' . $href;
-                }
-
-                $c = $o === $href ? ' class="active"' : '';
-                $iconHtml = $icon ? '<i class="' . htmlspecialchars($icon) . '"></i> ' : '';
-
-                $links .= '
-        <a' . $c . ' href="' . htmlspecialchars($href) . '">' . $iconHtml . htmlspecialchars($label) . '</a>';
-            }
-        }
-
-        return '
-      <nav>' . $links . '
-      </nav>';
+            <li class="nav-item' . $c . '"><a class="nav-link" href="' . $n[1] . '">' . $i . $n[0] . '</a></li>';
+        }, $a));
     }
 
     public function head(): string
@@ -148,7 +101,7 @@ class Theme
         return '
     <footer class="text-center">
       <br>
-      <p><em><small>Copyright (C) 2015-2025 Mark Constable (AGPL-3.0)</small></em></p>
+      <p><em><small>' . $this->g->out['foot'] . '</small></em></p>
     </footer>';
     }
 
@@ -180,28 +133,6 @@ class Theme
 ';
     }
 
-    public static function setGlobal(object $g): void
-    {
-        self::$globalG = $g;
-    }
-
-    public static function setTheme(string $theme): void
-    {
-        $themeClass = "HCP\\Themes\\$theme";
-        if (class_exists($themeClass)) {
-            self::$currentTheme = $theme;
-        }
-    }
-
-    public static function getTheme(): object
-    {
-        if (!self::$globalG) {
-            throw new \RuntimeException('Global object not set. Call Theme::setGlobal() first.');
-        }
-        $themeClass = "HCP\\Themes\\" . self::$currentTheme;
-        return new $themeClass(self::$globalG);
-    }
-
     public static function dropdown(
         array $ary,
         string $name,
@@ -209,37 +140,46 @@ class Theme
         string $label = '',
         string $class = '',
         string $extra = ''
-    ): string {
+    ): string
+    {
         elog(__METHOD__);
 
         $opt = $label ? '
                 <option value="">' . ucfirst($label) . '</option>' : '';
         $buf = '';
         $c = $class ? ' class="' . $class . '"' : '';
-        foreach ($ary as $k => $v) {
-            if (!is_array($v)) {
-                continue;
-            }
-
-            // Convert array elements to query parameters
-            $params = [];
-            foreach ($v as $key => $value) {
-                if (is_array($value)) {
-                    continue; // Skip nested arrays
-                }
-                $params[$key] = $value;
-            }
-
-            $value = http_build_query($params);
-            $t = str_replace('?t=', '', $value);
+        foreach ($ary as $k => $v)
+        {
+            $t = str_replace('?t=', '', (string) $v[1]);
             $s = $sel === $t ? ' selected' : '';
-
             $buf .= '
-                        <option value="' . $t . '"' . $s . '>' . htmlspecialchars($params[0] ?? '') . '</option>';
+                        <option value="' . $t . '"' . $s . '>' . $v[0] . '</option>';
         }
 
         return '
                       <select' . $c . ' name="' . $name . '" id="' . $name . '"' . $extra . '>' . $opt . $buf . '
                       </select>';
+    }
+
+    public function nav_dropdown(array $a = []): string
+    {
+        elog(__METHOD__);
+
+        $o = '?o=' . $this->g->in['o'];
+        $i = isset($a[2]) ? '<i class="' . $a[2] . '"></i> ' : '';
+
+        return '
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' . $i . $a[0] . '</a>
+              <div class="dropdown-menu">' . implode('', array_map(function ($n) use ($o)
+        {
+            $c = $o === $n[1] ? ' active' : '';
+            $i = isset($n[2]) ? '<i class="' . $n[2] . '"></i> ' : '';
+
+            return '
+                <a class="dropdown-item" href="' . $n[1] . '">' . $i . $n[0] . '</a>';
+        }, $a[1])) . '
+              </div>
+            </li>';
     }
 }

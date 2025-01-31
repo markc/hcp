@@ -8,29 +8,23 @@ namespace HCP\Plugins\Home;
 
 use HCP\Theme;
 
-class View
+class View extends Theme
 {
-    private object $theme;
+    /*
     public object $g;
 
     public function __construct(object $g)
     {
+        elog(__METHOD__);
+
         $this->g = $g;
-        Theme::setGlobal($g);
-        $this->theme = Theme::getTheme();
     }
-
-    public function __call(string $name, array $args): string
-    {
-        // Delegate any undefined method calls to the theme instance
-        return $this->theme->$name(...$args);
-    }
-
+*/
     public function list(array $in = []): string
     {
         elog(__METHOD__);
 
-        $content = '
+        return '
     <div class="col-12">
       <h3>
         <i class="fas fa-server fa-fw"></i> NetServa HCP
@@ -82,6 +76,6 @@ Comments and pull requests are most welcome via the Issue Tracker link below.
       </p>
     </div>';
 
-        return $this->theme->render($content, $in);
+        // return $this->theme->render($content, $in);
     }
 }

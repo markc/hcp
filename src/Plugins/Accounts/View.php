@@ -6,11 +6,38 @@ declare(strict_types=1);
 
 namespace HCP\Plugins\Accounts;
 
-use HCP\Themes\TopNav;
+use HCP\Theme;
 use HCP\Db;
 
-class View extends TopNav
+class View extends Theme
 {
+    private object $theme;
+    public object $g;
+
+    public function __construct(object $g)
+    {
+        elog(__METHOD__);
+
+        $this->g = $g;
+        Theme::setGlobal($g);
+
+        // Set theme based on URL parameter if provided
+        if (!empty($g->in['t']) && in_array($g->in['t'], ['Basic', 'SideBar', 'TopNav']))
+        {
+            Theme::setTheme($g->in['t']);
+        }
+
+        $this->theme = Theme::getTheme();
+    }
+
+    public function __call(string $name, array $args): string
+    {
+        elog(__METHOD__);
+
+        // Delegate any undefined method calls to the theme instance
+        return $this->theme->$name(...$args);
+    }
+
     public function create(array $in): string
     {
         elog(__METHOD__);
