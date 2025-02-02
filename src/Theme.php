@@ -1,8 +1,8 @@
 <?php
 
 declare(strict_types=1);
-// Created: 20150101 - Updated: 20230604
-// Copyright (C) 2015-2023 Mark Constable <markc@renta.net> (AGPL-3.0)
+// Created: 20150101 - Updated: 20250202
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP;
 
@@ -41,6 +41,25 @@ class Theme
         }
 
         return 'Theme::' . $name . '() not implemented';
+    }
+
+    public function html(): string
+    {
+        elog(__METHOD__);
+
+        extract($this->g->out, EXTR_SKIP);
+
+        return '<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>' . $doc . '</title>' . $css . '
+  </head>
+  <body>' . $log . $nav1 . $head . $main . $foot . $js . '
+  </body>
+</html>
+';
     }
 
     public function log(): string
@@ -182,25 +201,6 @@ class Theme
             $body,
             $footer
         );
-    }
-
-    public function html(): string
-    {
-        elog(__METHOD__);
-
-        extract($this->g->out, EXTR_SKIP);
-
-        return '<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>' . $doc . '</title>' . $css . $js . '
-  </head>
-  <body>' . $head . $main . $foot . $end . '
-  </body>
-</html>
-';
     }
 
     public static function dropdown(

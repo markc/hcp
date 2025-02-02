@@ -73,6 +73,7 @@ class Init
         {
             foreach ($g->out as $k => $v)
             {
+                //elog("$k => $v");
                 $g->out[$k] = match (true)
                 {
                     method_exists($thm, $k) => $thm->{$k}(),
@@ -82,52 +83,13 @@ class Init
                 };
             }
         }
-        /*
-        if (empty($g->in['x']))
-        {
-            foreach ($g->out as $k => $v)
-            {
-                elog("$k => $v");
-                // Skip modal method as it requires parameters
-                if ($k === 'modal')
-                {
-                    continue;
-                }
-                // Simple method resolution order:
-                // 1. Plugin View (if method exists)
-                // 2. Current Theme (if method exists)
-                // 3. Base Theme (if method exists)
-                // 4. Default from index.php
-
-                // Try Plugin View first
-                if (method_exists($thm, $k))
-                {
-                    $g->out[$k] = $thm->{$k}();
-                }
-                // Then try current theme
-                else if ($thm->theme && method_exists($thm->theme, $k))
-                {
-                    $g->out[$k] = $thm->theme->{$k}();
-                }
-                // Finally try base Theme class
-                else if (method_exists('HCP\\Theme', $k))
-                {
-                    $g->out[$k] = (new Theme($g))->{$k}();
-                }
-                // Fall back to default
-                else
-                {
-                    $g->out[$k] = $v;
-                }
-            }
-        }
-        */
     }
 
     public function __toString(): string
     {
         elog(__METHOD__);
-
+        //dbg($this->t);
+        elog(var_export($this->t, true));
         $x = $this->g->in['x'];
         $f = $this->g->in['f']; // Default 'html' is already set in $in array
 
