@@ -38,22 +38,30 @@ class Model extends Plugin
         elog(__METHOD__);
 
         $usr = Db::read('*', 'id', $this->g->in['i'], '', 'one');
-        if (!$usr) {
+        if (!$usr)
+        {
             Util::log('User not found.');
             Util::relist();
             return '';
         }
 
-        if (Util::is_acl(0)) {
+        if (Util::is_acl(0))
+        {
             // superadmin
-        } elseif (Util::is_acl(1)) { // normal admin
-            if ((int)$_SESSION['usr']['grp'] !== (int)$usr['grp']) {
+        }
+        elseif (Util::is_acl(1))
+        { // normal admin
+            if ((int)$_SESSION['usr']['grp'] !== (int)$usr['grp'])
+            {
                 Util::log('You are not authorized to perform this action.');
                 Util::relist();
                 return '';
             }
-        } else { // Other users
-            if ((int)$_SESSION['usr']['id'] !== (int)$usr['id']) {
+        }
+        else
+        { // Other users
+            if ((int)$_SESSION['usr']['id'] !== (int)$usr['id'])
+            {
                 Util::log('You are not authorized to perform this action.');
                 Util::relist();
                 return '';
@@ -66,7 +74,8 @@ class Model extends Plugin
     {
         elog(__METHOD__);
 
-        if (Util::is_post()) {
+        if (Util::is_post())
+        {
             parent::delete();
             return '';
         }
@@ -77,21 +86,25 @@ class Model extends Plugin
     {
         elog(__METHOD__);
 
-        if ($this->g->in['x'] === 'json') {
+        if ($this->g->in['f'] === 'json')
+        {
             $columns = [
                 ['dt' => null, 'db' => 'id'],
-                ['dt' => 0, 'db' => 'login', 'formatter' => function ($d, array $row): string {
-                    return '<b><a href="?o=Accounts&m=read&i=' . $row['id'] . '&x=html" class="bslink">' . $d . '</a></b>';
+                ['dt' => 0, 'db' => 'login', 'formatter' => function ($d, array $row): string
+                {
+                    return '<b><a href="?o=Accounts&m=read&i=' . $row['id'] . '&x=modal" class="bslink">' . $d . '</a></b>';
                 }],
                 ['dt' => 1, 'db' => 'fname'],
                 ['dt' => 2, 'db' => 'lname'],
                 ['dt' => 3, 'db' => 'altemail'],
-                ['dt' => 4, 'db' => 'acl', 'formatter' => function ($d): string {
+                ['dt' => 4, 'db' => 'acl', 'formatter' => function ($d): string
+                {
                     return $this->g->acl[is_string($d) ? (int)$d : $d];
                 }],
                 ['dt' => 5, 'db' => 'grp'],
             ];
-            return json_encode(Db::simple($_GET, 'accounts', 'id', $columns));
+            $this->g->out['json'] = Db::simple($_GET, 'accounts', 'id', $columns);
+            return '';
         }
         return $this->g->t->list($this->in);
     }
@@ -100,13 +113,17 @@ class Model extends Plugin
     {
         elog(__METHOD__);
 
-        if (Util::is_adm() && !is_null($this->g->in['i'])) {
+        if (Util::is_adm() && !is_null($this->g->in['i']))
+        {
             $usr = Db::read('id,acl,grp,login,fname,lname,webpw,cookie', 'id', $this->g->in['i'], '', 'one');
-            if ($usr) {
+            if ($usr)
+            {
                 $_SESSION['usr'] = $usr;
                 Util::log('Switch to user: ' . $usr['login'], 'success');
             }
-        } else {
+        }
+        else
+        {
             Util::log('Not authorized to switch users');
         }
         Util::relist();

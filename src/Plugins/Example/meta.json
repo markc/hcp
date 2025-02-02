@@ -1,0 +1,6 @@
+{
+    "name": "Example",
+    "description": "A Simple Example Plugin",
+    "icon": "bi bi-house fw",
+    "order": 100
+}

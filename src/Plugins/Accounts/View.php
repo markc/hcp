@@ -11,33 +11,6 @@ use HCP\Db;
 
 class View extends Theme
 {
-    private object $theme;
-    public object $g;
-
-    public function __construct(object $g)
-    {
-        elog(__METHOD__);
-
-        $this->g = $g;
-        Theme::setGlobal($g);
-
-        // Set theme based on URL parameter if provided
-        if (!empty($g->in['t']) && in_array($g->in['t'], ['Basic', 'SideBar', 'TopNav']))
-        {
-            Theme::setTheme($g->in['t']);
-        }
-
-        $this->theme = Theme::getTheme();
-    }
-
-    public function __call(string $name, array $args): string
-    {
-        elog(__METHOD__);
-
-        // Delegate any undefined method calls to the theme instance
-        return $this->theme->$name(...$args);
-    }
-
     public function create(array $in): string
     {
         elog(__METHOD__);
@@ -63,7 +36,7 @@ class View extends Theme
             'body'      => $this->modal_body($in),
             'footer'    => '
                   <button type="submit" class="btn btn-primary">Update</button>
-                  <a href="?o=Accounts&m=delete&i=' . $this->g->in['i'] . '&x=html" class="btn btn-danger bslink" data-bs-dismiss="modal">Delete</a>'
+                  <a href="?o=Accounts&m=delete&i=' . $this->g->in['i'] . '&x=modal" class="btn btn-danger bslink" data-bs-dismiss="modal">Delete</a>'
         ]);
     }
 
@@ -78,7 +51,7 @@ class View extends Theme
             'title'     => 'Remove User',
             'action'    => 'delete',
             'body'      => sprintf('<p class="text-center">Are you sure you want to remove this user?<br><b>%s</b></p>', $usr['login']),
-            'footer'    => 'Remove',
+            'footer'    => '<button type="submit" class="btn btn-danger">Remove</button>',
             'hidden'    => sprintf('<input type="hidden" name="i" value="%s">', $this->g->in['i'])
         ]);
     }
@@ -89,66 +62,66 @@ class View extends Theme
 
         return <<<HTML
         <div class="row">
-          <h1>
-            <i class="bi bi-people-fill"></i> Accounts
-            <a href="?o=Accounts&m=create&x=html" class="bslink" title="Add new account">
-              <small><i class="bi bi-plus-circle"></i></small>
-            </a>
-          </h1>
+            <h1>
+                <i class="bi bi-people-fill"></i> Accounts
+                <a href="?o=Accounts&m=create&x=modal" class="bslink" title="Add new account">
+                    <small><i class="bi bi-plus-circle"></i></small>
+                </a>
+            </h1>
         </div>
         <div class="table-responsive">
-          <table id="accounts" class="table table-borderless table-striped w-100">
-            <thead>
-              <tr>
-                <th>Login</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Alt Email</th>
-                <th>Access Level</th>
-                <th>Group</th>
-              </tr>
-            </thead>
-            <tbody>
-            </tbody>
-          </table>
+            <table id="accounts" class="table table-borderless table-striped w-100">
+                <thead>
+                    <tr>
+                        <th>Login</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Alt Email</th>
+                        <th>Access Level</th>
+                        <th>Group</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
         </div>
         <div id="modals"></div>
         <script>
         $(document).ready(function() {
-          var table = $("#accounts").DataTable({
-            "processing": true,
-            "serverSide": true,
-            "ajax": "?x=json&o=Accounts&m=list",
-            "scrollX": true,
-            "info": true,
-            "columnDefs": [
-              {"targets":0, "className":"text-truncate"},
-              {"targets":3, "className":"text-truncate"},
-            ]
-          });
-
-          $(document).on("click", ".bslink", function(event){
-            event.preventDefault();
-            var url = $(this).attr("href");
-            var m = new URLSearchParams(url).get("m");
-            $("#modals").empty().load(url, function() {
-              $("#" + m + "modal").modal("show").on('hidden.bs.modal', function () {
-                $("#modals").empty();
-              });
-              
-              // Handle form submission for delete
-              if (m === "delete") {
-                $("#deletemodal form").on("submit", function(e) {
-                  e.preventDefault();
-                  $.post($(this).attr("action"), $(this).serialize())
-                    .done(function() {
-                      $("#deletemodal").modal("hide");
-                      table.ajax.reload();
-                    });
-                });
-              }
+            var table = $("#accounts").DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": "?o=Accounts&m=list&x=json&f=json",
+                "scrollX": true,
+                "info": true,
+                "columnDefs": [
+                    {"targets":0, "className":"text-truncate"},
+                    {"targets":3, "className":"text-truncate"},
+                ]
             });
-          });
+
+            $(document).on("click", ".bslink", function(event){
+                event.preventDefault();
+                var url = $(this).attr("href");
+                var m = new URLSearchParams(url).get("m");
+                $("#modals").empty().load(url, function() {
+                    $("#" + m + "modal").modal("show").on('hidden.bs.modal', function () {
+                        $("#modals").empty();
+                });
+              
+                // Handle form submission for delete
+                if (m === "delete") {
+                    $("#deletemodal form").on("submit", function(e) {
+                        e.preventDefault();
+                        $.post($(this).attr("action"), $(this).serialize())
+                            .done(function() {
+                                $("#deletemodal").modal("hide");
+                                table.ajax.reload();
+                            });
+                        });
+                    }
+                });
+            });
         });
         </script>
         HTML;
@@ -161,7 +134,13 @@ class View extends Theme
         $acl = $_SESSION['usr']['acl'];
         $grp = $_SESSION['usr']['grp'];
 
-        $acl_ary = array_map(fn($k, $v) => [$v, $k], array_keys($this->g->acl), $this->g->acl);
+        $acl_levels = [
+            0 => 'Super Admin',
+            1 => 'Admin',
+            2 => 'User',
+            3 => 'Guest'
+        ];
+        $acl_ary = array_map(fn($k, $v) => [$v, $k], array_keys($acl_levels), $acl_levels);
         $acl_buf = $this->dropdown($acl_ary, 'acl', "{$acl}", '', 'form-select');
 
         $res = Db::qry('SELECT login, id FROM `accounts` WHERE acl IN (0, 1)');

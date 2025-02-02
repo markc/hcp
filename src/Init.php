@@ -54,7 +54,7 @@ class Init
 
         if (class_exists($t2))
         {
-            $thm->themeImpl = new $t2($g);
+            $thm->theme = new $t2($g);
         }
 
         $p = "HCP\\Plugins\\{$g->in['o']}\\Model";
@@ -71,59 +71,106 @@ class Init
 
         if (empty($g->in['x']))
         {
-            if ($thm->themeImpl)
+            foreach ($g->out as $k => $v)
             {
-                foreach ($g->out as $k => $v)
+                $g->out[$k] = match (true)
                 {
-                    $g->out[$k] = method_exists($thm->themeImpl, $k)
-                        ? $thm->themeImpl->{$k}()
-                        : (method_exists($thm, $k) ? $thm->{$k}() : $v);
-                }
+                    method_exists($thm, $k) => $thm->{$k}(),
+                    $thm->theme && method_exists($thm->theme, $k) => $thm->theme->{$k}(),
+                    method_exists('HCP\\Theme', $k) => (new Theme($g))->{$k}(),
+                    default => $v
+                };
             }
-            else
+        }
+        /*
+        if (empty($g->in['x']))
+        {
+            foreach ($g->out as $k => $v)
             {
-                foreach ($g->out as $k => $v)
+                elog("$k => $v");
+                // Skip modal method as it requires parameters
+                if ($k === 'modal')
                 {
-                    $g->out[$k] = method_exists($thm, $k) ? $thm->{$k}() : $v;
+                    continue;
+                }
+                // Simple method resolution order:
+                // 1. Plugin View (if method exists)
+                // 2. Current Theme (if method exists)
+                // 3. Base Theme (if method exists)
+                // 4. Default from index.php
+
+                // Try Plugin View first
+                if (method_exists($thm, $k))
+                {
+                    $g->out[$k] = $thm->{$k}();
+                }
+                // Then try current theme
+                else if ($thm->theme && method_exists($thm->theme, $k))
+                {
+                    $g->out[$k] = $thm->theme->{$k}();
+                }
+                // Finally try base Theme class
+                else if (method_exists('HCP\\Theme', $k))
+                {
+                    $g->out[$k] = (new Theme($g))->{$k}();
+                }
+                // Fall back to default
+                else
+                {
+                    $g->out[$k] = $v;
                 }
             }
         }
-    }
-
-    public function __destruct()
-    {
-        elog(__METHOD__ . ' SESSION=' . var_export($_SESSION, true));
-        elog(__FILE__ . ' ' . $_SERVER['REMOTE_ADDR'] . ' ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']), 4) . "\n");
+        */
     }
 
     public function __toString(): string
     {
         elog(__METHOD__);
-        $g = $this->g;
-        $x = $g->in['x'];
 
-        if ('text' === $x)
+        $x = $this->g->in['x'];
+        $f = $this->g->in['f']; // Default 'html' is already set in $in array
+
+        // If no specific section requested, return full page HTML
+        if (!$x)
         {
-            return preg_replace('/^\h*\v+/m', '', strip_tags($g->out['main']));
+            return $this->t->html();
         }
 
-        if ('json' === $x)
+        // Get the requested section content
+        $content = $this->g->out[$x] ?? $this->g->out['main'] ?? '';
+        if (!$content)
         {
-            header('Content-Type: application/json');
-            return $g->out['main'];
+            return "Error: Content is empty";
         }
 
-        if ($x)
+        // Handle different output formats
+        switch ($f)
         {
-            $out = $g->out[$x] ?? '';
-            if ($out)
-            {
+            case 'json':
                 header('Content-Type: application/json');
-                return json_encode($out, JSON_PRETTY_PRINT);
-            }
-        }
+                return json_encode($content, JSON_PRETTY_PRINT);
 
-        return $this->t->html();
+            case 'text':
+                header('Content-Type: text/plain');
+                return preg_replace('/^\h*\v+/m', '', strip_tags($content));
+
+            case 'markdown':
+                header('Content-Type: text/markdown');
+                // You might want to add specific markdown processing here
+                return preg_replace('/^\h*\v+/m', '', $content);
+
+            case 'html':
+            default:
+                header('Content-Type: text/html');
+                return $content;
+        }
+    }
+
+    public function __destruct()
+    {
+        //elog(__METHOD__ . ' SESSION=' . var_export($this->g->out, true));
+        elog(__FILE__ . ' ' . $_SERVER['REMOTE_ADDR'] . ' ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']), 4) . "\n");
     }
 }
 

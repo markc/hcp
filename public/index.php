@@ -26,27 +26,30 @@ echo new Init(new class()
         'a' => '',                  // API (apiusr:apikey)
         'd' => '',                  // Domain (current)
         'g' => null,                // Group/Category
+        'f' => 'html',              // Rendering Format
         'i' => null,                // Item or ID
         'l' => '',                  // Log (message)
         'm' => 'list',              // Method (action)
         'o' => 'Home',              // Object (content)
         'r' => 'local',             // Remotes (local)
-        't' => 'Basic',             // Theme (Default)
+        't' => 'TopNav',            // Theme (Default)
         'x' => '',                  // XHR (request)
     ];
 
     public $out = [
-        'doc'  => 'NetServa HCP',
-        'css'  => '',
-        'log'  => '',
-        'nav1' => '',
-        'nav2' => '',
-        'nav3' => '',
-        'head' => 'NetServa',
-        'main' => 'Error: missing page!',
-        'foot' => 'Copyright (C) 2015-2025 Mark Constable (AGPL-3.0)',
-        'js'   => '',
-        'end'  => '',
+        'doc'   => 'NetServa HCP',
+        'css'   => '',
+        'log'   => '',
+        'nav1'  => '',
+        'nav2'  => '',
+        'nav3'  => '',
+        'head'  => 'NetServa',
+        'main'  => 'Error: missing page!',
+        'foot'  => 'Copyright (C) 2015-2025 Mark Constable (AGPL-3.0)',
+        'js'    => '',
+        'json'  => '',
+        'modal' => '',
+        'end'   => '',
     ];
 
     public $t;

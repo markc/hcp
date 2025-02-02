@@ -6,12 +6,17 @@ declare(strict_types=1);
 
 namespace HCP\Themes;
 
-use HCP\Theme;
 use HCP\Util;
 
-class TopNav extends Basic
+class TopNav
 {
     protected array $defaultNav = [];
+    protected object $g;
+
+    public function __construct(object $g)
+    {
+        $this->g = $g;
+    }
 
     public function css(): string
     {
@@ -206,7 +211,14 @@ table.dataTable{border-collapse: collapse !important;}
       </div>
     </main>';
     }
+    /*
+    public function foot(): string
+    {
+        elog(__METHOD__);
 
+        return '[TopNav] ' . $this->g->out['foot'];
+    }
+    */
     public function js(): string
     {
         elog(__METHOD__);
@@ -219,7 +231,7 @@ table.dataTable{border-collapse: collapse !important;}
   <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>';
     }
 
-    protected function modal(array $ary): string
+    public function modal(array $ary): string
     {
         elog(__METHOD__);
 

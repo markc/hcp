@@ -14,6 +14,22 @@ class View extends Theme
     {
         elog(__METHOD__);
 
+        // Check if this is an AJAX request
+        if (
+            isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
+        )
+        {
+            return '
+          <div class="col-12">
+            <h5>Process List <small>(' . ($in['procs'] ? (count(explode("\n", $in['procs'])) - 1) : 0) . ')</small></h5>
+            <div class="table-responsive">
+              <pre><code>' . ($in['procs'] ?? 'No process data available') . '
+            </code></pre>
+            </div>
+          </div>';
+        }
+
         return '
           <div class="col-12 col-md-6">
             <h3><i class="bi bi-diagram-2-fill"></i> Processes</h3>
@@ -42,19 +58,16 @@ class View extends Theme
             e.preventDefault();
             
             const formData = new FormData(this);
-            fetch(\'?x=text&o=Processes\', {
+            fetch(\'?x=main&o=Processes\', {
                 method: "POST",
+                headers: {
+                    \'X-Requested-With\': \'XMLHttpRequest\'
+                },
                 body: formData
             })
             .then(response => response.text())
             .then(text => {
-                document.getElementById("processContent").innerHTML = `
-                  <div class="col-12">
-                    <h5>Process List <small>(${(text.match(/\n/g) || []).length})</small></h5>
-                    <div class="table-responsive">
-                      <pre><code>${text}</code></pre>
-                    </div>
-                  </div>`;
+                document.getElementById("processContent").innerHTML = text;
             })
             .catch(error => {
                 console.error("Error:", error);

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HCP;
 
-use HCP\Config\AppConfig;
 use HCP\Util;
 use HCP\Db;
 
@@ -14,14 +13,12 @@ abstract class Plugin
     protected mixed $dbh = null;
     protected string $tbl = '';
     protected array $in = [];
-    protected object $g;
-    //protected AppConfig $config;
+    public object $g;
 
     public function __construct(public object $t)
     {
         elog(__METHOD__);
 
-        //$this->config = AppConfig::getInstance();
         $this->t = $t;
         $this->g = $t->g;
         $this->in = Util::esc($this->in);
