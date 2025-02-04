@@ -29,7 +29,7 @@ class Model extends Plugin
     ];
 
     // forgotpw
-    public function create(): string
+    public function create(): array
     {
         Util::elog(__METHOD__);
 
@@ -44,48 +44,79 @@ class Model extends Plugin
                     if ($usr['acl'] != 9)
                     {
                         $newpass = util::genpw(self::OTP_LENGTH);
-                        if ($this->mail_forgotpw($u, $newpass, 'From: ' . $this->g->cfg['email']))
+                        if ($this->mail_forgotpw($u, $newpass, 'From: ' . $this->controller->config->email))
                         {
                             db::update([
                                 'otp' => $newpass,
                                 'otpttl' => time()
                             ], [['id', '=', $usr['id']]]);
                             util::log('Sent reset password key for "' . $u . '" so please check your mailbox and click on the supplied link.', 'success');
+                            return [
+                                'status' => 'success',
+                                'message' => 'Password reset email sent',
+                                'redirect' => $this->controller->config->self . '?plugin=Auth&action=list'
+                            ];
                         }
-                        else util::log('Problem sending message to ' . $u, 'danger');
-                        util::redirect($this->g->cfg['self'] . '?plugin=' . $this->g->input['plugin'] . '&action=list');
+                        else
+                        {
+                            util::log('Problem sending message to ' . $u, 'danger');
+                            return [
+                                'status' => 'error',
+                                'message' => 'Failed to send password reset email'
+                            ];
+                        }
                     }
-                    else util::log('Account is disabled, contact your System Administrator');
+                    else return [
+                        'status' => 'error',
+                        'message' => 'Account is disabled, contact your System Administrator'
+                    ];
                 }
-                else util::log('User does not exist');
+                else return [
+                    'status' => 'error',
+                    'message' => 'User does not exist'
+                ];
             }
-            else util::log('You must provide a valid email address');
+            else return [
+                'status' => 'error',
+                'message' => 'You must provide a valid email address'
+            ];
         }
-        return $this->g->t->create(['login' => $u]);
+
+        // Return form view state
+        return [
+            'status' => 'form',
+            'message' => 'Reset password',
+            'data' => ['login' => $u]
+        ];
     }
 
     // login
-    public function list(): string
+    public function list(): array
     {
         Util::elog(__METHOD__);
 
         $u = (string)$this->in['login'];
         $p = (string)$this->in['webpw'];
 
-        if (!empty($this->g->cfg['email']) && !empty($this->g->cfg['admpw']))
+        if (!empty($this->controller->config->email) && !empty($this->controller->config->admpw))
         {
             $_SESSION['usr'] = [
                 'id' => 0,
                 'grp' => 0,
                 'acl' => 0,
-                'login' => $this->g->cfg['email'],
+                'login' => $this->controller->config->email,
                 'fname' => 'Admin',
                 'lname' => 'User'
             ];
             $_SESSION['adm'] = 0;
             util::log($u . ' is now logged in', 'success');
             $_SESSION['m'] = 'list';
-            util::redirect($this->g->cfg['self']);
+            util::redirect($this->controller->config->self);
+            return [
+                'status' => 'success',
+                'message' => 'Logged in successfully',
+                'redirect' => true
+            ];
         }
 
         if ($u)
@@ -111,26 +142,61 @@ class Model extends Plugin
                         util::log($login . ' is now logged in', 'success');
                         if ($acl === 0) $_SESSION['adm'] = $id;
                         $_SESSION['m'] = 'list';
-                        util::redirect($this->g->cfg['self']);
+                        util::redirect($this->controller->config->self);
+                        return [
+                            'status' => 'success',
+                            'message' => 'Logged in successfully',
+                            'redirect' => true
+                        ];
                     }
-                    else util::log('Invalid Email Or Password');
+                    else
+                    {
+                        util::log('Invalid Email Or Password');
+                        return [
+                            'status' => 'error',
+                            'message' => 'Invalid Email Or Password'
+                        ];
+                    }
                 }
-                else util::log('Account is disabled, contact your System Administrator');
+                else
+                {
+                    util::log('Account is disabled, contact your System Administrator');
+                    return [
+                        'status' => 'error',
+                        'message' => 'Account is disabled'
+                    ];
+                }
             }
-            else util::log('Invalid Email Or Password');
+            else
+            {
+                util::log('Invalid Email Or Password');
+                return [
+                    'status' => 'error',
+                    'message' => 'Invalid Email Or Password'
+                ];
+            }
         }
-        return $this->g->t->list(['login' => $u]);
+
+        return [
+            'status' => 'form',
+            'message' => 'Login',
+            'data' => ['login' => $u]
+        ];
     }
 
     // resetpw
-    public function update(): string
+    public function update(): array
     {
         Util::elog(__METHOD__);
 
         if (!(util::is_usr() || isset($_SESSION['resetpw'])))
         {
             util::log('Session expired! Please login and try again.');
-            util::relist();
+            return [
+                'status' => 'error',
+                'message' => 'Session expired',
+                'redirect' => $this->controller->config->self . '?plugin=Auth'
+            ];
         }
 
         $i = (util::is_usr()) ? (int)$_SESSION['usr']['id'] : (int)$_SESSION['resetpw']['usr']['id'];
@@ -158,27 +224,72 @@ class Model extends Plugin
                                 util::log('Password reset for ' . $usr['login'], 'success');
                                 if (util::is_usr())
                                 {
-                                    util::redirect($this->g->cfg['self']);
+                                    return [
+                                        'status' => 'success',
+                                        'message' => 'Password updated successfully',
+                                        'redirect' => $this->controller->config->self
+                                    ];
                                 }
                                 else
                                 {
                                     unset($_SESSION['resetpw']);
-                                    util::relist();
+                                    return [
+                                        'status' => 'success',
+                                        'message' => 'Password reset successfully',
+                                        'redirect' => $this->controller->config->self . '?plugin=Auth'
+                                    ];
                                 }
                             }
-                            else util::log('Problem updating database');
+                            else
+                            {
+                                util::log('Problem updating database');
+                                return [
+                                    'status' => 'error',
+                                    'message' => 'Database update failed'
+                                ];
+                            }
                         }
-                        else util::log($usr['login'] . ' is not allowed access');
+                        else
+                        {
+                            util::log($usr['login'] . ' is not allowed access');
+                            return [
+                                'status' => 'error',
+                                'message' => 'Access denied'
+                            ];
+                        }
                     }
-                    else util::log('Your one time password key has expired');
+                    else
+                    {
+                        util::log('Your one time password key has expired');
+                        return [
+                            'status' => 'error',
+                            'message' => 'Password reset key expired'
+                        ];
+                    }
                 }
+                return [
+                    'status' => 'error',
+                    'message' => 'Password validation failed'
+                ];
             }
-            else util::log('User does not exist');
+            else
+            {
+                util::log('User does not exist');
+                return [
+                    'status' => 'error',
+                    'message' => 'User not found'
+                ];
+            }
         }
-        return $this->g->t->update(['id' => $i, 'login' => $u]);
+
+        return [
+            'status' => 'form',
+            'message' => 'Reset password',
+            'data' => ['id' => $i, 'login' => $u]
+        ];
     }
 
-    public function delete(): string
+    public function delete(): array
     {
         Util::elog(__METHOD__);
 
@@ -197,13 +308,22 @@ class Model extends Plugin
                 setcookie('remember', '', strtotime('-1 hour', 0));
             }
             util::log($u . ' is now logged out', 'success');
+            return [
+                'status' => 'success',
+                'message' => 'Logged out successfully',
+                'redirect' => $this->controller->config->self
+            ];
         }
-        util::redirect($this->g->cfg['self']);
-        return '';
+
+        return [
+            'status' => 'error',
+            'message' => 'Not logged in',
+            'redirect' => $this->controller->config->self
+        ];
     }
 
     // Utilities
-    public function resetpw(): string
+    public function resetpw(): array
     {
         Util::elog(__METHOD__);
 
@@ -222,17 +342,51 @@ class Model extends Plugin
                     if ($acl != 3)
                     { // suspended
                         $_SESSION['resetpw'] = ['usr' => $usr];
-                        return $this->g->t->update(['id' => $id, 'login' => $login]);
+                        return [
+                            'status' => 'form',
+                            'message' => 'Reset password',
+                            'data' => ['id' => $id, 'login' => $login]
+                        ];
                     }
-                    else util::log($login . ' is not allowed access');
+                    else
+                    {
+                        util::log($login . ' is not allowed access');
+                        return [
+                            'status' => 'error',
+                            'message' => 'Access denied',
+                            'redirect' => $this->controller->config->self
+                        ];
+                    }
                 }
-                else util::log('Your one time password key has expired');
+                else
+                {
+                    util::log('Your one time password key has expired');
+                    return [
+                        'status' => 'error',
+                        'message' => 'Password reset key expired',
+                        'redirect' => $this->controller->config->self
+                    ];
+                }
             }
-            else util::log('Your one time password key no longer exists');
+            else
+            {
+                util::log('Your one time password key no longer exists');
+                return [
+                    'status' => 'error',
+                    'message' => 'Invalid reset key',
+                    'redirect' => $this->controller->config->self
+                ];
+            }
         }
-        else util::log('Incorrect one time password key');
-        util::redirect($this->g->cfg['self']);
-        return '';
+        else
+        {
+            util::log('Incorrect one time password key');
+            return [
+                'status' => 'error',
+                'message' => 'Invalid reset key',
+                'redirect' => $this->controller->config->self
+            ];
+        }
     }
 
     private function mail_forgotpw(string $email, string $newpass, string $headers = ''): bool
@@ -240,11 +394,11 @@ class Model extends Plugin
         Util::elog(__METHOD__);
 
         $host = $_SERVER['REQUEST_SCHEME'] . '://'
-            . $this->g->cfg['host']
-            . $this->g->cfg['self'];
+            . $this->controller->config->host
+            . $this->controller->config->self;
         return mail(
             $email,
-            'Reset password for ' . $this->g->cfg['host'],
+            'Reset password for ' . $this->controller->config->host,
             'Here is your new OTP (one time password) key that is valid for one hour.
 
 Please click on the link below and continue with reseting your password.

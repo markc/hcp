@@ -1,8 +1,8 @@
 <?php
 
 declare(strict_types=1);
-// lib/php/util.php 20150225 - 20220324
-// Copyright (C) 2015-2022 Mark Constable <markc@renta.net> (AGPL-3.0)
+// Created: 20150225 - Updated: 20250204
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP;
 
@@ -26,15 +26,23 @@ final class Util
     {
         self::elog(__METHOD__);
 
+        if (!isset($_SESSION['log']))
+        {
+            $_SESSION['log'] = [];
+        }
+
         if ($msg)
         {
+            if (!isset($_SESSION['log'][$lvl]))
+            {
+                $_SESSION['log'][$lvl] = '';
+            }
             $_SESSION['log'][$lvl] = empty($_SESSION['log'][$lvl]) ? $msg : $_SESSION['log'][$lvl] . '<br>' . $msg;
         }
-        elseif (isset($_SESSION['log']) and $_SESSION['log'])
+        elseif (!empty($_SESSION['log']))
         {
             $l = $_SESSION['log'];
             $_SESSION['log'] = [];
-
             return $l;
         }
 
@@ -81,14 +89,15 @@ final class Util
     {
         self::elog(__METHOD__);
 
-        if (file_exists($init->config->file))
+        $config = $init->getConfig();
+        if (file_exists($config->file))
         {
-            $loadedConfig = include $init->config->file;
+            $loadedConfig = include $config->file;
             foreach ($loadedConfig as $key => $value)
             {
-                if (property_exists($init->config, $key) && is_array($init->config->$key))
+                if (property_exists($config, $key) && is_array($config->$key))
                 {
-                    $init->config->$key = array_merge($init->config->$key, $value);
+                    $config->$key = array_merge($config->$key, $value);
                 }
             }
         }
@@ -111,51 +120,39 @@ final class Util
         return exec('sudo ' . escapeshellcmd($cmd) . ' 2>&1');
     }
 
-    public static function now(string $date1, ?string $date2 = null): string
+    public static function now(string|int $date1, string|int|null $date2 = null): string
     {
         self::elog(__METHOD__);
 
-        if (!is_numeric($date1))
-        {
-            $date1 = strtotime($date1);
-        }
-        if ($date2 and !is_numeric($date2))
-        {
-            $date2 = strtotime($date2);
-        }
-        $date2 ??= time();
-        $diff = abs($date1 - $date2);
+        $timestamp1 = is_numeric($date1) ? (int)$date1 : strtotime($date1);
+        $timestamp2 = (int)($date2 ? (is_numeric($date2) ? $date2 : strtotime($date2)) : time());
+
+        $diff = abs($timestamp1 - $timestamp2);
+
         if ($diff < 10)
         {
             return ' just now';
         }
 
         $blocks = [
-            ['k' => 'year', 'v' => 31536000],
-            ['k' => 'month', 'v' => 2678400],
-            ['k' => 'week', 'v' => 604800],
-            ['k' => 'day',  'v' => 86400],
-            ['k' => 'hour', 'v' => 3600],
-            ['k' => 'min',  'v' => 60],
-            ['k' => 'sec',  'v' => 1],
+            'year' => 31536000,
+            'month' => 2678400,
+            'week' => 604800,
+            'day' => 86400,
+            'hour' => 3600,
+            'min' => 60,
+            'sec' => 1,
         ];
-        $levels = 2;
-        $current_level = 1;
-        $result = [];
 
-        foreach ($blocks as $block)
+        $result = [];
+        foreach ($blocks as $unit => $seconds)
         {
-            if ($current_level > $levels)
+            if (count($result) >= 2) break;
+
+            if ($amount = floor($diff / $seconds))
             {
-                break;
-            }
-            if ($diff / $block['v'] >= 1)
-            {
-                $amount = floor($diff / $block['v']);
-                $plural = ($amount > 1) ? 's' : '';
-                $result[] = $amount . ' ' . $block['k'] . $plural;
-                $diff -= $amount * $block['v'];
-                ++$current_level;
+                $result[] = "$amount $unit" . ($amount > 1 ? 's' : '');
+                $diff -= $amount * $seconds;
             }
         }
 
@@ -234,95 +231,66 @@ final class Util
     {
         self::elog(__METHOD__);
 
-        if (strlen($pw) > 11)
+        $validationResult = match (true)
         {
-            if (preg_match('/[0-9]+/', $pw))
-            {
-                if (preg_match('/[A-Z]+/', $pw))
-                {
-                    if (preg_match('/[a-z]+/', $pw))
-                    {
-                        if ($pw2)
-                        {
-                            if ($pw === $pw2)
-                            {
-                                return true;
-                            }
-                            util::log('Passwords do not match, please try again');
-                        }
-                        else
-                        {
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        util::log('Password must contains at least one lower case letter');
-                    }
-                }
-                else
-                {
-                    util::log('Password must contains at least one captital letter');
-                }
-            }
-            else
-            {
-                util::log('Password must contains at least one number');
-            }
-        }
-        else
+            strlen($pw) <= 11 => 'Passwords must be at least 12 characters',
+            !preg_match('/[0-9]+/', $pw) => 'Password must contains at least one number',
+            !preg_match('/[A-Z]+/', $pw) => 'Password must contains at least one captital letter',
+            !preg_match('/[a-z]+/', $pw) => 'Password must contains at least one lower case letter',
+            $pw2 !== '' && $pw !== $pw2 => 'Passwords do not match, please try again',
+            default => ''
+        };
+
+        if ($validationResult !== '')
         {
-            util::log('Passwords must be at least 12 characters');
+            util::log($validationResult);
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     public static function chkapi(Init $init): void
     {
         self::elog(__METHOD__);
 
-        [$apiusr, $apikey] = explode(':', $init->input['api'], 2);
+        [$apiusr, $apikey] = explode(':', $init->getController()->input['api'], 2);
 
-        if (!self::is_usr($apiusr))
-        { // if this user has already logged in then avoid extra DB lookup
-            if (is_null(Db::$dbh))
-            {
-                Db::$dbh = new Db($init->config->db);
-            }
-            Db::$tbl = 'accounts';
-
-            if ($usr = Db::read('id,grp,acl,login,fname,lname,webpw', 'id', $apiusr, '', 'one'))
-            {
-                if ($usr['acl'] !== ACL::Suspended->value)
-                {
-                    if (password_verify(html_entity_decode($apikey, ENT_QUOTES, 'UTF-8'), $usr['webpw']))
-                    {
-                        self::elog("API login for id={$apiusr}");
-                        $_SESSION['usr'] = $usr;
-                        if ($usr['acl'] === ACL::SuperAdmin->value)
-                        {
-                            $_SESSION['adm'] = $apiusr;
-                        }
-                    }
-                    else
-                    {
-                        exit('Invalid Email Or Password');
-                    }
-                }
-                else
-                {
-                    exit('Account is disabled, contact your System Administrator');
-                }
-            }
-            else
-            {
-                exit('Invalid Email Or Password');
-            }
-        }
-        else
+        if (self::is_usr($apiusr))
         {
             self::elog("API id={$apiusr} is already logged in");
+            return;
+        }
+
+        Db::$dbh ??= new Db($init->getConfig()->db);
+        Db::$tbl = 'accounts';
+
+        $usr = Db::read('id,grp,acl,login,fname,lname,webpw', 'id', $apiusr, '', 'one')
+            ?? exit('Invalid Email Or Password');
+
+        match (true)
+        {
+            $usr['acl'] === ACL::Suspended->value
+            => exit('Account is disabled, contact your System Administrator'),
+
+            !password_verify(
+                html_entity_decode($apikey, ENT_QUOTES, 'UTF-8'),
+                $usr['webpw']
+            ) => exit('Invalid Email Or Password'),
+
+            default => self::chkadm($apiusr, $usr)
+        };
+    }
+
+    private static function chkadm(string $apiusr, array $usr): void
+    {
+        self::elog("API login for id={$apiusr}");
+
+        $_SESSION['usr'] = $usr;
+
+        if ($usr['acl'] === ACL::SuperAdmin->value)
+        {
+            $_SESSION['adm'] = $apiusr;
         }
     }
 
@@ -336,7 +304,7 @@ final class Util
             {
                 if (is_null(Db::$dbh))
                 {
-                    Db::$dbh = new Db($init->config->db);
+                    Db::$dbh = new Db($init->getConfig()->db);
                 }
                 Db::$tbl = 'accounts';
                 if ($usr = Db::read('id,grp,acl,login,fname,lname,cookie', 'cookie', $c, '', 'one'))
@@ -348,8 +316,8 @@ final class Util
                         $_SESSION['adm'] = $id;
                     }
                     self::log($login . ' is remembered and logged back in', 'success');
-                    self::ses('object', '', $init->input['object']);
-                    self::ses('method', '', $init->input['method']);
+                    self::ses('object', '', $init->getController()->input['object']);
+                    self::ses('method', '', $init->getController()->input['method']);
                 }
             }
         }

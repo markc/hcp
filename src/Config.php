@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-// Created: 20150101 - Updated: 20250203
+// Created: 20250101 - Updated: 20250204
 // Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP;
@@ -17,7 +17,7 @@ enum ACL: int
     case Anonymous = 9;
 }
 
-readonly class Config
+class Config
 {
     public string $email;
     public string $admpw;
@@ -33,10 +33,7 @@ readonly class Config
     public array $dns;
     public string $acl;
 
-    public function __construct(
-        string $self = '/',
-        string $host = ''
-    )
+    public function __construct()
     {
         Util::elog(__METHOD__);
 
@@ -44,9 +41,9 @@ readonly class Config
         $this->admpw = 'admin123';
         $this->file = '../src/.ht_conf.php';
         $this->hash = 'SHA512-CRYPT';
-        $this->host = $host;
+        $this->host = getenv('HOSTNAME') ?: '';
         $this->perp = 25;
-        $this->self = $self;
+        $this->self = str_replace('index.php', '', $_SERVER['PHP_SELF']);
         $this->db = [
             'host' => '127.0.0.1',
             'name' => 'sysadm',
@@ -72,24 +69,25 @@ readonly class Config
                     ['Phpmyadmin',  'phpmyadmin/',  'bi bi-globe'],
                 ], 'bi bi-list'],
                 ['Admin',       [
-                    ['Accounts',    '?o=Accounts',  'bi bi-people'],
-                    ['Vhosts',      '?o=Vhosts',    'bi bi-globe'],
-                    ['Mailboxes',   '?o=Vmails',    'bi bi-envelope'],
-                    ['Aliases',     '?o=Valias',    'bi bi-envelope-fill'],
-                    ['DKIM',        '?o=Dkim',      'bi bi-person-vcard'],
-                    ['Domains',     '?o=Domains',   'bi bi-server'],
+                    ['Accounts',    '?plugin=Accounts',  'bi bi-people'],
+                    ['Vhosts',      '?plugin=Vhosts',    'bi bi-globe'],
+                    ['Mailboxes',   '?plugin=Vmails',    'bi bi-envelope'],
+                    ['Aliases',     '?plugin=Valias',    'bi bi-envelope-fill'],
+                    ['DKIM',        '?plugin=Dkim',      'bi bi-person-vcard'],
+                    ['Domains',     '?plugin=Domains',   'bi bi-server'],
                 ], 'bi bi-gear-fill'],
                 ['Stats',       [
-                    ['Sys Info',    '?o=InfoSys',   'bi bi-speedometer'],
-                    ['Processes',   '?o=Processes', 'bi bi-diagram-2'],
-                    ['Mail Info',   '?o=Infomail',  'bi bi-envelope-fill'],
-                    ['Mail Graph',  '?o=Mailgraph', 'bi bi-envelope'],
+                    ['Sys Info',    '?plugin=InfoSys',   'bi bi-speedometer'],
+                    ['Processes',   '?plugin=Processes', 'bi bi-diagram-2'],
+                    ['Mail Info',   '?plugin=Infomail',  'bi bi-envelope-fill'],
+                    ['Mail Graph',  '?plugin=Mailgraph', 'bi bi-envelope'],
                 ], 'bi bi-graph-up'],
+                ['Example', '?plugin=Example', 'bi bi-globe']
             ],
         ];
         $this->nav2 = [
-            ['TopNav', '?t=TopNav', 'bi bi-list'],
-            ['SideBar', '?t=SideBar', 'bi bi-layout-sidebar']
+            ['TopNav', '?theme=TopNav', 'bi bi-list'],
+            ['SideBar', '?theme=SideBar', 'bi bi-layout-sidebar']
         ];
         $this->nav3 = [];
         $this->dns = [

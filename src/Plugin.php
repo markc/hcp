@@ -1,156 +1,183 @@
 <?php
 
 declare(strict_types=1);
+// Created: 20150101 - Updated: 20250204
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP;
 
-use HCP\Db;
-use HCP\Util;
-use HCP\Init;
-
 class Plugin
 {
-    protected string $buf = '';
-    protected mixed $dbh = null;
     protected string $tbl = '';
-    protected Init $init;
-    protected Theme $theme;
+    protected bool $isValid = false;
 
-    public function __construct(Theme $theme, Init $init)
+    public function __construct(
+        protected readonly Controller $controller
+    )
     {
         Util::elog(__METHOD__);
 
-        $this->theme = $theme;
-        $this->init = $init;
-
-        if (!$this->validateAccess())
+        $this->isValid = $this->validateAccess();
+        if ($this->isValid)
         {
-            return;
+            $this->initializeDatabase();
+        }
+    }
+
+    protected function validateAccess(): bool
+    {
+        Util::elog(__METHOD__);
+
+        $plugin = $this->controller->input['plugin'] ?? '';
+        $action = $this->controller->input['action'] ?? '';
+
+        if ($plugin === 'Auth' && in_array($action, ['list', 'create', 'resetpw'], true))
+        {
+            return true;
         }
 
-        $this->initializeDatabase();
-        $this->processAction();
+        if (!Util::is_usr())
+        {
+            Util::redirect($this->controller->config->self . '?plugin=Auth');
+            return false;
+        }
+
+        return true;
     }
 
     protected function initializeDatabase(): void
     {
         Util::elog(__METHOD__);
 
-        if ($this->tbl)
+        if ($this->tbl && is_null(Db::$dbh))
         {
-            if (!is_null($this->dbh))
-            {
-                Db::$dbh = $this->dbh;
-            }
-            elseif (is_null(Db::$dbh))
-            {
-                Db::$dbh = new Db($this->theme->db);
-            }
+            Db::$dbh = new Db($this->controller->config->db);
             Db::$tbl = $this->tbl;
         }
     }
 
-    protected function processAction(): void
+    public function create(): array
     {
         Util::elog(__METHOD__);
 
-        $action = $this->init->input['action'] ?? 'list';
-
-        $this->buf .= $this->{$action}();
-    }
-
-    public function __toString(): string
-    {
-        Util::elog(__METHOD__);
-
-        return $this->buf;
-    }
-
-    protected function create(): string
-    {
-        Util::elog(__METHOD__);
+        if (!$this->isValid)
+        {
+            return ['status' => 'error', 'message' => 'Access denied'];
+        }
 
         if (Util::is_post())
         {
-            $this->init->input['updated'] = date('Y-m-d H:i:s');
-            $this->init->input['created'] = date('Y-m-d H:i:s');
-            $lid = Db::create($this->init->input);
-            Util::log('Item number ' . $lid . ' created', 'success');
-            Util::relist();
+            $input = $this->controller->input;
+            $input['updated'] = $input['created'] = date('Y-m-d H:i:s');
+
+            if (Db::create($input))
+            {
+                Util::log('Item created successfully', 'success');
+                return [
+                    'status' => 'success',
+                    'message' => 'Item created successfully',
+                    'redirect' => true
+                ];
+            }
         }
-        return $this->theme->create($this->init->input);
+
+        return [
+            'status' => 'form',
+            'message' => 'Create new item',
+            'data' => $this->controller->input
+        ];
     }
 
-    protected function read(): string
+    public function read(): array
     {
         Util::elog(__METHOD__);
-        return $this->theme->read(Db::read('*', 'id', $this->init->input['item'], '', 'one'));
+
+        if (!$this->isValid)
+        {
+            return ['status' => 'error', 'message' => 'Access denied'];
+        }
+
+        $item = Db::read('*', 'id', $this->controller->input['item'], '', 'one');
+
+        return [
+            'status' => 'success',
+            'message' => 'Item details',
+            'data' => $item
+        ];
     }
 
-    protected function update(): string
+    public function update(): array
     {
         Util::elog(__METHOD__);
+
+        if (!$this->isValid)
+        {
+            return ['status' => 'error', 'message' => 'Access denied'];
+        }
 
         if (Util::is_post())
         {
-            $this->init->input['updated'] = date('Y-m-d H:i:s');
-            if (Db::update($this->init->input, [['id', '=', $this->init->input['item']]]))
+            $input = $this->controller->input;
+            $input['updated'] = date('Y-m-d H:i:s');
+
+            if (Db::update($input, [['id', '=', $input['item']]]))
             {
-                Util::log('Item number ' . $this->init->input['item'] . ' updated', 'success');
-                Util::relist();
-            }
-            else
-            {
-                Util::log('Error updating item.');
+                Util::log('Item ' . $input['item'] . ' updated', 'success');
+                return [
+                    'status' => 'success',
+                    'message' => 'Item updated successfully',
+                    'redirect' => true
+                ];
             }
         }
+
         return $this->read();
     }
 
-    protected function delete(): string
+    public function delete(): array
     {
         Util::elog(__METHOD__);
 
-        if (Util::is_post())
+        if (!$this->isValid)
         {
-            if ($this->init->input['item'])
+            return ['status' => 'error', 'message' => 'Access denied'];
+        }
+
+        if (Util::is_post() && $this->controller->input['item'])
+        {
+            if (Db::delete([['id', '=', $this->controller->input['item']]]))
             {
-                Db::delete([['id', '=', $this->init->input['item']]]);
-                Util::log('Item number ' . $this->init->input['item'] . ' removed', 'success');
-                Util::relist();
-            }
-            else
-            {
-                Util::log('Error deleting item');
+                Util::log('Item ' . $this->controller->input['item'] . ' removed', 'success');
+                return [
+                    'status' => 'success',
+                    'message' => 'Item deleted successfully',
+                    'redirect' => true
+                ];
             }
         }
-        return '';
+
+        return [
+            'status' => 'confirm',
+            'message' => 'Confirm deletion',
+            'item' => $this->controller->input['item']
+        ];
     }
 
-    protected function list(): string
+    public function list(): array
     {
         Util::elog(__METHOD__);
-        return $this->theme->list(Db::read('*', '', '', 'ORDER BY `updated` DESC'));
-    }
 
-    protected function validateAccess(): bool
-    {
-        $plugin = $this->init->input['plugin'] ?? '';
-        $action = $this->init->input['action'] ?? '';
-
-        // Always allow access to Auth plugin's public actions
-        if ($plugin === 'Auth' && in_array($action, ['list', 'create', 'resetpw'], true))
+        if (!$this->isValid)
         {
-            return true;
+            return ['status' => 'error', 'message' => 'Access denied'];
         }
 
-        // Require user to be logged in for all other actions
-        if (!Util::is_usr())
-        {
-            Util::redirect($this->init->config->self . '?plugin=Auth');
-            return false;
-        }
+        $items = Db::read('*', '', '', 'ORDER BY `updated` DESC');
 
-        return true;
+        return [
+            'status' => 'success',
+            'message' => 'Items list',
+            'data' => $items
+        ];
     }
 }

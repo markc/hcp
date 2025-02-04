@@ -1,125 +1,134 @@
 <?php
 
 declare(strict_types=1);
+// Created: 20150101 - Updated: 20250204
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP;
 
+const DBG = true;
+
 class Init
 {
-    public Config $config;
-    private ?object $pluginView = null;     // Plugin specific view
-    private ?object $currentTheme = null;   // Current theme implementation
-    private Theme $baseTheme;               // Base theme fallback
-    public array $input = [
-        'api'       => '',
-        'domain'    => '',
-        'format'    => 'html',
-        'item'      => null,
-        'log'       => '',
-        'action'    => 'list',
-        'plugin'    => 'Home',
-        'remote'    => 'local',
-        'theme'     => 'TopNav',
-        'xhr'       => '',
-    ];
-    public array $output = [
-        'doc'   => 'NetServa HCP',
-        'css'   => '',
-        'log'   => '',
-        'nav1'  => '',
-        'nav2'  => '',
-        'nav3'  => '',
-        'head'  => 'NetServa HCP',
-        'main'  => 'Error: missing page!',
-        'foot'  => 'Copyright (C) 2015-2025 Mark Constable (AGPL-3.0)',
-        'js'    => '',
-    ];
+    private Config $config;
+    private ?Controller $controller;
 
-    public function __construct(Config $config)
+    public function getConfig(): Config
+    {
+        return $this->config;
+    }
+
+    public function getController(): Controller
+    {
+        return $this->controller;
+    }
+
+    public function __construct(Config $config, ?Controller $controller = null)
+    {
+        Util::elog(__METHOD__);
+        $this->config = $config;
+        $this->controller = $controller ?? new Controller($config);
+        $this->bootstrap();
+    }
+
+    private function bootstrap(): void
     {
         Util::elog(__METHOD__);
 
-        $this->config = $config;
-        session_start();
+        // Get plugin and theme names
+        $themeName = Util::ses('theme', $this->controller->input['theme']);
+        $pluginName = $this->controller->input['plugin'];
 
-        // Process input parameters
-        $this->input = Util::esc($this->input);
+        // Initialize class names
+        $pluginViewClass = "HCP\\Plugins\\$pluginName\\View";
+        $themeClass = "HCP\\Themes\\$themeName";
+        $pluginModelClass = "HCP\\Plugins\\$pluginName\\Model";
 
-        // Initialize session
-        if (!isset($_SESSION['csrf_token']))
-        {
-            $_SESSION['csrf_token'] = Util::random_token(32);
-        }
+        // Set up view hierarchy
+        $baseTheme = new Theme($this->controller);
+        $activeTheme = class_exists($themeClass)
+            ? new $themeClass($this->controller, $baseTheme)
+            : $baseTheme;
+        $pluginView = class_exists($pluginViewClass)
+            ? new $pluginViewClass($this->controller, $activeTheme)  // Pass activeTheme as parent for fallback
+            : null;
 
-        // Store session values
-        Util::ses('plugin');
-        Util::ses('action');
-        Util::ses('log');
-
-        $theme_name = Util::ses('theme', $this->input['theme']);
-        Util::elog("theme=$theme_name");
-
-        // Initialize view hierarchy
-        $view_class = "HCP\\Plugins\\{$this->input['plugin']}\\View";
-        $theme_class = "HCP\\Themes\\$theme_name";
-
-        Util::elog("view_class=$view_class");
-        Util::elog("theme_class=$theme_class");
-
-        // Set up theme hierarchy
-        $this->baseTheme = new Theme($this);
-
-        if (class_exists($theme_class))
-        {
-            $this->currentTheme = new $theme_class($this);
-        }
-
-        if (class_exists($view_class))
-        {
-            $this->pluginView = new $view_class($this);
-        }
+        // Store theme references
+        $this->controller->currentTheme = $activeTheme;
+        $this->controller->pluginView = $pluginView;
 
         // Process plugin
-        $plugin_class = "HCP\\Plugins\\{$this->input['plugin']}\\Model";
-        if (class_exists($plugin_class))
+        if (class_exists($pluginModelClass))
         {
-            $this->input['api'] ? Util::chkapi($this) : Util::remember($this);
-            $this->output['main'] = (string) new $plugin_class($this->baseTheme, $this);
+            if ($this->controller->input['api'])
+            {
+                Util::chkapi($this);
+            }
+            else
+            {
+                Util::remember($this);
+            }
+
+            // Handle plugin action and update main output
+            $result = $this->controller->handlePluginAction($pluginModelClass);
+            $this->controller->output['main'] = $this->renderPluginResult($result, $pluginView ?? $activeTheme);
         }
 
-        // Process output
-        if (empty($this->input['xhr']))
+        // Process output methods if not XHR request
+        if (empty($this->controller->input['xhr']))
         {
-            foreach ($this->output as $key => $default)
-            {
-                $this->output[$key] = $this->resolveMethod($key) ?? $default;
-            }
+            $this->processOutputMethods($pluginView, $activeTheme, $baseTheme);
         }
     }
 
-    private function resolveMethod(string $method): ?string
+    private function renderPluginResult(array $result, object $view): string
     {
-        Util::elog(__METHOD__ . ' method=' . $method);
+        Util::elog(__METHOD__);
 
-        // Try plugin view first
-        if ($this->pluginView && method_exists($this->pluginView, $method))
+        $action = $this->controller->input['action'];
+
+        // Handle redirects
+        if ($result['redirect'] ?? false)
         {
-            //Util::elog(__METHOD__ . ' Try plugin view first');
-            return $this->pluginView->{$method}();
+            Util::relist();
+            return '';
         }
 
-        // Then try current theme
-        if ($this->currentTheme && method_exists($this->currentTheme, $method))
+        // Render view with result data
+        return $view->$action($result);
+    }
+
+    private function processOutputMethods(?object $pluginView, object $activeTheme, Theme $baseTheme): void
+    {
+        Util::elog(__METHOD__);
+
+        // Always populate output array regardless of whether plugin view has html() method
+        foreach ($this->controller->output as $key => $default)
         {
-            //Util::elog(__METHOD__ . ' Then try current theme');
-            return $this->currentTheme->{$method}();
+            $this->controller->output[$key] = $this->resolveMethod($key, $pluginView, $activeTheme, $baseTheme) ?? $default;
+        }
+    }
+
+    private function resolveMethod(string $method, ?object $pluginView, object $activeTheme, Theme $baseTheme): ?string
+    {
+        //Util::elog(__METHOD__ . " method=$method");
+
+        // Try plugin view first
+        if ($pluginView && method_exists($pluginView, $method))
+        {
+            return $pluginView->{$method}();
+        }
+
+        // Then try active theme
+        if (method_exists($activeTheme, $method))
+        {
+            return $activeTheme->{$method}();
         }
 
         // Finally try base theme
-        if (method_exists($this->baseTheme, $method))
+        if (method_exists($baseTheme, $method))
         {
-            //Util::elog(__METHOD__ . ' Finally try base theme');
-            return $this->baseTheme->{$method}();
+            return $baseTheme->{$method}();
         }
 
         return null;
@@ -129,34 +138,6 @@ class Init
     {
         Util::elog(__METHOD__);
 
-        if ($this->input['xhr'])
-        {
-            $content = $this->output[$this->input['xhr']] ?? $this->output['main'] ?? '';
-            if (!$content)
-            {
-                return "Error: Content is empty";
-            }
-
-            // Set content type and return formatted content
-            $content_type = match ($this->input['format'])
-            {
-                'json' => 'application/json',
-                'text' => 'text/plain',
-                'markdown' => 'text/markdown',
-                default => 'text/html'
-            };
-            header("Content-Type: $content_type");
-
-            return match ($this->input['format'])
-            {
-                'json' => json_encode($content, JSON_PRETTY_PRINT),
-                'text' => preg_replace('/^\h*\v+/m', '', strip_tags($content)),
-                'markdown' => preg_replace('/^\h*\v+/m', '', $content),
-                default => $content
-            };
-        }
-
-        // For full page render, use the same resolution method as partials
-        return $this->resolveMethod('html') ?? $this->baseTheme->html();
+        return $this->controller->html();
     }
 }

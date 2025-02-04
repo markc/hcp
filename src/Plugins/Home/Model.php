@@ -8,36 +8,26 @@ namespace HCP\Plugins\Home;
 
 use HCP\Plugin;
 use HCP\Util;
-use HCP\Init;
-use HCP\Theme;
 
 class Model extends Plugin
 {
-    protected Init $init;
-    protected Theme $theme;
-
-    public function __construct(Theme $theme, Init $init)
-    {
-        Util::elog(__METHOD__);
-
-        \HCP\dbg($theme);
-
-        parent::__construct($theme, $init);
-    }
-
-    public function list(): string
+    public function list(): array
     {
         Util::elog(__METHOD__);
 
         $tpl_path = __DIR__ . '/Home.tpl';
+        $tpl_buf = $tpl_path . ' does not exist';
 
         if (file_exists($tpl_path))
         {
             ob_start();
             include $tpl_path;
-            return ob_get_clean();
+            $tpl_buf = ob_get_clean();
         }
 
-        return $this->theme->list([]);
+        return [
+            'status' => 'success',
+            'message' => $tpl_buf
+        ];
     }
 }

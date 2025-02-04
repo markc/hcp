@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-// Created: 20250201 - Updated: 20250202
+// Created: 20250201 - Updated: 20250204
 // Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP\Plugins\Example;
@@ -11,38 +11,53 @@ use HCP\Util;
 
 class Model extends Plugin
 {
-    public function create(): string
+    public function create(): array
     {
         Util::elog(__METHOD__);
-
-        return $this->t->create([]);
+        // Add your create logic here
+        return [
+            'status' => 'success',
+            'message' => 'Create operation'
+        ];
     }
 
-    public function read(): string
+    public function read(): array
     {
         Util::elog(__METHOD__);
-
-        return $this->t->read([]);
+        // Add your read logic here
+        return [
+            'status' => 'success',
+            'message' => 'Read operation'
+        ];
     }
 
-    public function update(): string
+    public function update(): array
     {
         Util::elog(__METHOD__);
-
-        return $this->t->update([]);
+        // Add your update logic here
+        return [
+            'status' => 'success',
+            'message' => 'Update operation'
+        ];
     }
 
-    public function delete(): string
+    public function delete(): array
     {
         Util::elog(__METHOD__);
-
-        return $this->t->delete([]);
+        // Add your delete logic here
+        return [
+            'status' => 'success',
+            'message' => 'Delete operation'
+        ];
     }
 
-    public function list(): string
+    public function list(): array
     {
         Util::elog(__METHOD__);
-
-        return $this->t->list([]);
+        // Add your list logic here
+        return [
+            'status' => 'success',
+            'message' => 'List operation'
+        ];
     }
 }

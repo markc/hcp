@@ -1,22 +1,32 @@
 <?php
 
 declare(strict_types=1);
-// Created: 20250201 - Update: 20250202
+// Created: 20250201 - Updated: 20250204
 // Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP\Plugins\Example;
 
 use HCP\Util;
-use HCP\Theme;
-use HCP\Init;
 
-class View extends Theme
+class View
 {
-    public function __construct(Init $init)
+    public function html(array $output = []): string
     {
         Util::elog(__METHOD__);
+        //Util::elog(var_export($output, true));
+        extract($output, EXTR_SKIP);
 
-        parent::__construct($init);
+        return '<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>' . $doc . '</title>' . $css . '
+    </head>
+    <body>' . $head . $log . $main . $foot . $js . '
+    </body>
+</html>
+';
     }
 
     // Plugin Actions Views
@@ -57,25 +67,6 @@ class View extends Theme
     }
 
     // HTML Partial Views
-
-    public function html(): string
-    {
-        Util::elog(__METHOD__);
-
-        extract($this->init->output, EXTR_SKIP);
-
-        return '<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <title>' . $doc . '</title>' . $css . '
-    </head>
-    <body>' . $log . $head . $main . $foot . $js . '
-    </body>
-</html>
-';
-    }
 
     public function doc(array $in = []): string
     {
@@ -122,6 +113,7 @@ class View extends Theme
         Util::elog(__METHOD__);
 
         return '
+
         <div>
             ' . __METHOD__ . ' (Alerts area)
         </div>';
@@ -153,13 +145,12 @@ class View extends Theme
         Util::elog(__METHOD__);
 
         return '
-
         <header>
             ' . __METHOD__ . '
             <nav>
-                ' . $this->init->output['nav1'] . ' ||
-                ' . $this->init->output['nav2'] . ' ||
-                ' . $this->init->output['nav3'] . '
+                ' . $this->nav1() . ' |
+                ' . $this->nav2() . ' |
+                ' . $this->nav3() . '
             </nav>
         </header>';
     }
@@ -182,7 +173,7 @@ class View extends Theme
         return '
 
         <footer>
-            [View] ' . __METHOD__ . '
+            ' . __METHOD__ . '
         </footer>';
     }
 

@@ -11,12 +11,12 @@ use HCP\Util;
 
 class Model extends Plugin
 {
-    public function list(): string
+    public function list(): array
     {
         Util::elog(__METHOD__);
 
         $mem = $dif = $cpu = [];
-        $cpu_name = $procs = '';
+        $cpu_name = '';
         $cpu_num = 0;
         $os = 'Unknown OS';
 
@@ -60,10 +60,12 @@ class Model extends Plugin
         $dif['sys'] = $info2[2] - $info1[2];
         $dif['idle'] = $info2[3] - $info1[3];
         $total = array_sum($dif);
+
         foreach ($dif as $x => $y)
         {
             $cpu[$x] = round($y / $total * 100, 2);
         }
+
         $cpu_all = sprintf('User: %01.2f - System: %01.2f - Nice: %01.2f - Idle: %01.2f', $cpu['user'], $cpu['sys'], $cpu['nice'], $cpu['idle']);
         $cpu_pcnt = intval(round(100 - $cpu['idle']));
 
@@ -83,31 +85,34 @@ class Model extends Plugin
             ? explode(' ', trim(file_get_contents('/proc/version')))[2]
             : 'Unknown';
 
-        return $this->t->list([
-            'dsk_color' => $dp > 90 ? 'danger' : ($dp > 80 ? 'warning' : 'default'),
-            'dsk_free' => Util::numfmt($df),
-            'dsk_pcnt' => $dp,
-            'dsk_text' => $dp > 5 ? $dp . '%' : '',
-            'dsk_total' => Util::numfmt($dt),
-            'dsk_used' => Util::numfmt($du),
-            'mem_color' => $mp > 90 ? 'danger' : ($mp > 80 ? 'warning' : 'default'),
-            'mem_free' => Util::numfmt($mf),
-            'mem_pcnt' => $mp,
-            'mem_text' => $mp > 5 ? $mp . '%' : '',
-            'mem_total' => Util::numfmt($mt),
-            'mem_used' => Util::numfmt($mu),
-            'os_name' => $os,
-            'uptime' => Util::sec2time(intval(explode(' ', (string) file_get_contents('/proc/uptime'))[0])),
-            'loadav' => $lav,
-            'hostname' => $hn,
-            'host_ip' => $ip,
-            'kernel' => $knl,
-            'cpu_all' => $cpu_all,
-            'cpu_name' => $cpu_name,
-            'cpu_num' => $cpu_num,
-            'cpu_color' => $cpu_pcnt > 90 ? 'danger' : ($cpu_pcnt > 80 ? 'warning' : 'default'),
-            'cpu_pcnt' => $cpu_pcnt,
-            'cpu_text' => $cpu_pcnt > 5 ? $cpu_pcnt . '%' : '',
-        ]);
+        return [
+            'status' => 'success',
+            'message' => [
+                'dsk_color' => $dp > 90 ? 'danger' : ($dp > 80 ? 'warning' : 'default'),
+                'dsk_free'  => Util::numfmt($df),
+                'dsk_pcnt'  => $dp,
+                'dsk_text'  => $dp > 5 ? $dp . '%' : '',
+                'dsk_total' => Util::numfmt($dt),
+                'dsk_used'  => Util::numfmt($du),
+                'mem_color' => $mp > 90 ? 'danger' : ($mp > 80 ? 'warning' : 'default'),
+                'mem_free'  => Util::numfmt($mf),
+                'mem_pcnt'  => $mp,
+                'mem_text'  => $mp > 5 ? $mp . '%' : '',
+                'mem_total' => Util::numfmt($mt),
+                'mem_used'  => Util::numfmt($mu),
+                'os_name'   => $os,
+                'uptime'    => Util::sec2time(intval(explode(' ', (string) file_get_contents('/proc/uptime'))[0])),
+                'loadav'    => $lav,
+                'hostname'  => $hn,
+                'host_ip'   => $ip,
+                'kernel'    => $knl,
+                'cpu_all'   => $cpu_all,
+                'cpu_name'  => $cpu_name,
+                'cpu_num'   => $cpu_num,
+                'cpu_color' => $cpu_pcnt > 90 ? 'danger' : ($cpu_pcnt > 80 ? 'warning' : 'default'),
+                'cpu_pcnt'  => $cpu_pcnt,
+                'cpu_text'  => $cpu_pcnt > 5 ? $cpu_pcnt . '%' : '',
+            ]
+        ];
     }
 }
