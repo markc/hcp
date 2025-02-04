@@ -4,157 +4,159 @@ declare(strict_types=1);
 
 namespace HCP;
 
-use HCP\Util;
-
 class Init
 {
-    private $t;
+    public Config $config;
+    private ?object $pluginView = null;     // Plugin specific view
+    private ?object $currentTheme = null;   // Current theme implementation
+    private Theme $baseTheme;               // Base theme fallback
+    public array $input = [
+        'api'       => '',
+        'domain'    => '',
+        'format'    => 'html',
+        'item'      => null,
+        'log'       => '',
+        'action'    => 'list',
+        'plugin'    => 'Home',
+        'remote'    => 'local',
+        'theme'     => 'TopNav',
+        'xhr'       => '',
+    ];
+    public array $output = [
+        'doc'   => 'NetServa HCP',
+        'css'   => '',
+        'log'   => '',
+        'nav1'  => '',
+        'nav2'  => '',
+        'nav3'  => '',
+        'head'  => 'NetServa HCP',
+        'main'  => 'Error: missing page!',
+        'foot'  => 'Copyright (C) 2015-2025 Mark Constable (AGPL-3.0)',
+        'js'    => '',
+    ];
 
-    public function __construct(public object $g)
+    public function __construct(Config $config)
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        $this->g = $g;
-
+        $this->config = $config;
         session_start();
 
-        elog('GET=' . var_export($_GET, true));
-        elog('POST=' . var_export($_POST, true));
+        // Process input parameters
+        $this->input = Util::esc($this->input);
 
-        $g->cfg['host'] ??= getenv('HOSTNAME');
-
-        Util::cfg($g);
-
-        $g->in = Util::esc($g->in);
-
-        $g->cfg['self'] = str_replace('index.php', '', $_SERVER['PHP_SELF']);
-
-        if (!isset($_SESSION['c']))
+        // Initialize session
+        if (!isset($_SESSION['csrf_token']))
         {
-            $_SESSION['c'] = Util::random_token(32);
+            $_SESSION['csrf_token'] = Util::random_token(32);
         }
 
-        Util::ses('o');
-        Util::ses('m');
-        Util::ses('l');
+        // Store session values
+        Util::ses('plugin');
+        Util::ses('action');
+        Util::ses('log');
 
-        //        $t = Util::ses('t', '', $g->in['t']);
-        $t = Util::ses('t', $g->in['t']);
-        elog("t=$t");
+        $theme_name = Util::ses('theme', $this->input['theme']);
+        Util::elog("theme=$theme_name");
 
-        $t1 = "HCP\\Plugins\\{$g->in['o']}\\View";
-        elog("t1=$t1");
+        // Initialize view hierarchy
+        $view_class = "HCP\\Plugins\\{$this->input['plugin']}\\View";
+        $theme_class = "HCP\\Themes\\$theme_name";
 
-        $t2 = "HCP\\Themes\\$t";
-        elog("t2=$t2");
+        Util::elog("view_class=$view_class");
+        Util::elog("theme_class=$theme_class");
 
-        $this->t = $g->t = $thm = class_exists($t1)
-            ? new $t1($g)
-            : new Theme($g);
+        // Set up theme hierarchy
+        $this->baseTheme = new Theme($this);
 
-        if (class_exists($t2))
+        if (class_exists($theme_class))
         {
-            $thm->theme = new $t2($g);
+            $this->currentTheme = new $theme_class($this);
         }
 
-        $p = "HCP\\Plugins\\{$g->in['o']}\\Model";
-
-        if (class_exists($p))
+        if (class_exists($view_class))
         {
-            $g->in['a'] ? Util::chkapi($g) : Util::remember($g);
-            $g->out['main'] = (string) new $p($thm);
-        }
-        else
-        {
-            $g->out['main'] = 'Error: no plugin object!';
+            $this->pluginView = new $view_class($this);
         }
 
-        if (empty($g->in['x']))
+        // Process plugin
+        $plugin_class = "HCP\\Plugins\\{$this->input['plugin']}\\Model";
+        if (class_exists($plugin_class))
         {
-            foreach ($g->out as $k => $v)
+            $this->input['api'] ? Util::chkapi($this) : Util::remember($this);
+            $this->output['main'] = (string) new $plugin_class($this->baseTheme, $this);
+        }
+
+        // Process output
+        if (empty($this->input['xhr']))
+        {
+            foreach ($this->output as $key => $default)
             {
-                //elog("$k => $v");
-                $g->out[$k] = match (true)
-                {
-                    method_exists($thm, $k) => $thm->{$k}(),
-                    $thm->theme && method_exists($thm->theme, $k) => $thm->theme->{$k}(),
-                    method_exists('HCP\\Theme', $k) => (new Theme($g))->{$k}(),
-                    default => $v
-                };
+                $this->output[$key] = $this->resolveMethod($key) ?? $default;
             }
         }
     }
 
+    private function resolveMethod(string $method): ?string
+    {
+        Util::elog(__METHOD__ . ' method=' . $method);
+
+        // Try plugin view first
+        if ($this->pluginView && method_exists($this->pluginView, $method))
+        {
+            //Util::elog(__METHOD__ . ' Try plugin view first');
+            return $this->pluginView->{$method}();
+        }
+
+        // Then try current theme
+        if ($this->currentTheme && method_exists($this->currentTheme, $method))
+        {
+            //Util::elog(__METHOD__ . ' Then try current theme');
+            return $this->currentTheme->{$method}();
+        }
+
+        // Finally try base theme
+        if (method_exists($this->baseTheme, $method))
+        {
+            //Util::elog(__METHOD__ . ' Finally try base theme');
+            return $this->baseTheme->{$method}();
+        }
+
+        return null;
+    }
+
     public function __toString(): string
     {
-        elog(__METHOD__);
-        //dbg($this->t);
-        elog(var_export($this->t, true));
-        $x = $this->g->in['x'];
-        $f = $this->g->in['f']; // Default 'html' is already set in $in array
+        Util::elog(__METHOD__);
 
-        // If no specific section requested, return full page HTML
-        if (!$x)
+        if ($this->input['xhr'])
         {
-            return $this->t->html();
+            $content = $this->output[$this->input['xhr']] ?? $this->output['main'] ?? '';
+            if (!$content)
+            {
+                return "Error: Content is empty";
+            }
+
+            // Set content type and return formatted content
+            $content_type = match ($this->input['format'])
+            {
+                'json' => 'application/json',
+                'text' => 'text/plain',
+                'markdown' => 'text/markdown',
+                default => 'text/html'
+            };
+            header("Content-Type: $content_type");
+
+            return match ($this->input['format'])
+            {
+                'json' => json_encode($content, JSON_PRETTY_PRINT),
+                'text' => preg_replace('/^\h*\v+/m', '', strip_tags($content)),
+                'markdown' => preg_replace('/^\h*\v+/m', '', $content),
+                default => $content
+            };
         }
 
-        // Get the requested section content
-        $content = $this->g->out[$x] ?? $this->g->out['main'] ?? '';
-        if (!$content)
-        {
-            return "Error: Content is empty";
-        }
-
-        // Handle different output formats
-        switch ($f)
-        {
-            case 'json':
-                header('Content-Type: application/json');
-                return json_encode($content, JSON_PRETTY_PRINT);
-
-            case 'text':
-                header('Content-Type: text/plain');
-                return preg_replace('/^\h*\v+/m', '', strip_tags($content));
-
-            case 'markdown':
-                header('Content-Type: text/markdown');
-                // You might want to add specific markdown processing here
-                return preg_replace('/^\h*\v+/m', '', $content);
-
-            case 'html':
-            default:
-                header('Content-Type: text/html');
-                return $content;
-        }
-    }
-
-    public function __destruct()
-    {
-        //elog(__METHOD__ . ' SESSION=' . var_export($this->g->out, true));
-        elog(__FILE__ . ' ' . $_SERVER['REMOTE_ADDR'] . ' ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']), 4) . "\n");
-    }
-}
-
-function dbg($var = null): void
-{
-    if (is_object($var))
-    {
-        $refobj = new \ReflectionObject($var);
-        $var = $refobj->getProperties(\ReflectionProperty::IS_PUBLIC);
-        $var = \array_merge($var, $refobj->getProperties(\ReflectionProperty::IS_PROTECTED));
-    }
-    ob_start();
-    print_r($var);
-    $ob = ob_get_contents();
-    ob_end_clean();
-    error_log($ob);
-}
-
-function elog(string $content): void
-{
-    if (DBG)
-    {
-        error_log($content);
+        // For full page render, use the same resolution method as partials
+        return $this->resolveMethod('html') ?? $this->baseTheme->html();
     }
 }

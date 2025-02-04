@@ -1,24 +1,29 @@
 <?php
 
 declare(strict_types=1);
+// Created: 20250101 - Updated: 20250202
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP\Themes;
 
-class SideBar extends Basic
+use HCP\Util;
+use HCP\Theme;
+
+class SideBar extends Theme
 {
     public function __construct(object $g)
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         parent::__construct($g);
     }
 
     public function list(array $in = []): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        $lhsNav = $this->renderPluginNav($this->g->nav1);
-        $rhsNav = $this->renderPluginNav($this->g->nav2);
+        $lhsNav = $this->renderPluginNav($this->g->input['nav1'] ?? []);
+        $rhsNav = $this->renderPluginNav($this->g->input['nav2'] ?? []);
 
         return <<<HTML
         <!DOCTYPE html>
@@ -89,7 +94,7 @@ class SideBar extends Basic
 
     private function renderDropdown(array $section): string
     {
-        $currentPlugin = $this->config->in['plugin'] ?? 'Home';
+        $currentPlugin = $this->g->input['object'] ?? 'Home';
         $icon = isset($section[2]) ? '<i class="' . $section[2] . '"></i> ' : '';
 
         $submenuItems = array_map(
@@ -126,7 +131,7 @@ class SideBar extends Basic
 
     private function renderSingleNav(array $item): string
     {
-        $currentPlugin = $this->config->in['plugin'] ?? 'Home';
+        $currentPlugin = $this->g->input['object'] ?? 'Home';
         $isActive = $currentPlugin === $item[1] ? ' active' : '';
         $icon = isset($item[2]) ? '<i class="' . $item[2] . '"></i> ' : '';
 

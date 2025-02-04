@@ -1,8 +1,8 @@
 <?php
 
 declare(strict_types=1);
-// lib/php/plugins/users.php 20150101 - 20200414
-// Copyright (C) 2015-2020 Mark Constable <markc@renta.net> (AGPL-3.0)
+// Created: 20150101 - Updated: 20250202
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP\Plugins\Accounts;
 
@@ -25,7 +25,7 @@ class Model extends Plugin
 
     protected function create(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         if (Util::is_adm()) return parent::create();
         Util::log('You are not authorized to perform this action, please contact your administrator.');
@@ -35,9 +35,9 @@ class Model extends Plugin
 
     protected function read(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        $usr = Db::read('*', 'id', $this->g->in['i'], '', 'one');
+        $usr = Db::read('*', 'id', $this->g->input['i'], '', 'one');
         if (!$usr)
         {
             Util::log('User not found.');
@@ -72,7 +72,7 @@ class Model extends Plugin
 
     protected function delete(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         if (Util::is_post())
         {
@@ -84,15 +84,15 @@ class Model extends Plugin
 
     protected function list(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        if ($this->g->in['f'] === 'json')
+        if ($this->g->input['f'] === 'json')
         {
             $columns = [
                 ['dt' => null, 'db' => 'id'],
                 ['dt' => 0, 'db' => 'login', 'formatter' => function ($d, array $row): string
                 {
-                    return '<b><a href="?o=Accounts&m=read&i=' . $row['id'] . '&x=modal" class="bslink">' . $d . '</a></b>';
+                    return '<b><a href="?plugin=Accounts&action=read&i=' . $row['id'] . '&x=modal" class="bslink">' . $d . '</a></b>';
                 }],
                 ['dt' => 1, 'db' => 'fname'],
                 ['dt' => 2, 'db' => 'lname'],
@@ -111,11 +111,11 @@ class Model extends Plugin
 
     protected function switch_user(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        if (Util::is_adm() && !is_null($this->g->in['i']))
+        if (Util::is_adm() && !is_null($this->g->input['i']))
         {
-            $usr = Db::read('id,acl,grp,login,fname,lname,webpw,cookie', 'id', $this->g->in['i'], '', 'one');
+            $usr = Db::read('id,acl,grp,login,fname,lname,webpw,cookie', 'id', $this->g->input['i'], '', 'one');
             if ($usr)
             {
                 $_SESSION['usr'] = $usr;

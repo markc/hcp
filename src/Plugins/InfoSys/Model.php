@@ -13,7 +13,7 @@ class Model extends Plugin
 {
     public function list(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         $mem = $dif = $cpu = [];
         $cpu_name = $procs = '';
@@ -27,24 +27,28 @@ class Model extends Plugin
         sleep(1);
         $stat2 = file('/proc/stat');
 
-        if (is_readable('/proc/cpuinfo')) {
+        if (is_readable('/proc/cpuinfo'))
+        {
             $tmp = trim(file_get_contents('/proc/cpuinfo'));
             $ret = preg_match_all('/model name.+/', $tmp, $matches);
             $cpu_name = $ret ? explode(': ', $matches[0][0])[1] : 'Unknown CPU';
             $cpu_num = count($matches[0]);
         }
 
-        if (is_readable('/etc/os-release')) {
+        if (is_readable('/etc/os-release'))
+        {
             $tmp = explode("\n", trim(file_get_contents('/etc/os-release')));
             $osr = [];
-            foreach ($tmp as $line) {
+            foreach ($tmp as $line)
+            {
                 [$k, $v] = explode('=', $line);
                 $osr[$k] = trim($v, '" ');
             }
             $os = $osr['PRETTY_NAME'] ?? 'Unknown OS';
         }
 
-        foreach ($pmi as $line) {
+        foreach ($pmi as $line)
+        {
             [$k, $v] = explode(':', $line);
             [$mem[$k],] = explode(' ', trim($v));
         }
@@ -56,7 +60,8 @@ class Model extends Plugin
         $dif['sys'] = $info2[2] - $info1[2];
         $dif['idle'] = $info2[3] - $info1[3];
         $total = array_sum($dif);
-        foreach ($dif as $x => $y) {
+        foreach ($dif as $x => $y)
+        {
             $cpu[$x] = round($y / $total * 100, 2);
         }
         $cpu_all = sprintf('User: %01.2f - System: %01.2f - Nice: %01.2f - Idle: %01.2f', $cpu['user'], $cpu['sys'], $cpu['nice'], $cpu['idle']);

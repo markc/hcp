@@ -1,18 +1,19 @@
 <?php
 
 declare(strict_types=1);
-// lib/php/themes/bootstrap5/auth.php 20150101 - 20240906
-// Copyright (C) 2015-2024 Mark Constable <markc@renta.net> (AGPL-3.0)
+// Created: 20150101 - Updated: 20250202
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP\Plugins\Auth;
 
 use HCP\Themes\TopNav;
+use HCP\Util;
 
 class View extends TopNav
 {
     public function create(array $in): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         $login = $in['login'] ?? '';
         return <<<HTML
@@ -20,7 +21,7 @@ class View extends TopNav
           <h1><i class="bi bi-key"></i> Forgot password</h1>
           <form action="{$this->g->cfg['self']}" method="post">
             <input type="hidden" name="c" value="{$_SESSION['c']}">
-            <input type="hidden" name="o" value="{$this->g->in['o']}">
+            <input type="hidden" name="plugin" value="{$this->g->input['plugin']}">
             <div class="input-group mb-2 mr-sm-2">
               <div class="input-group-prepend">
                 <div class="input-group-text"><i class="bi bi-envelope"></i></div>
@@ -32,8 +33,8 @@ class View extends TopNav
             </small>
             <div class="form-group text-right">
               <div class="btn-group">
-                <a class="btn btn-outline-primary" href="?o=auth">&laquo; Back</a>
-                <button class="btn btn-primary" type="submit" name="m" value="create">Send</button>
+                <a class="btn btn-outline-primary" href="?plugin=auth">&laquo; Back</a>
+                <button class="btn btn-primary" type="submit" name="action" value="create">Send</button>
               </div>
             </div>
           </form>
@@ -43,7 +44,7 @@ class View extends TopNav
 
     public function list(array $in = []): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         $login = $in['login'] ?? '';
         return <<<HTML
@@ -51,7 +52,7 @@ class View extends TopNav
           <h1><i class="bi bi-key"></i> Sign in</h1>
           <form action="{$this->g->cfg['self']}" method="post">
             <input type="hidden" name="c" value="{$_SESSION['c']}">
-            <input type="hidden" name="o" value="auth">
+            <input type="hidden" name="plugin" value="auth">
             <div class="mb-3">
                 <label for="login" class="form-label">Username</label>
                 <div class="input-group">
@@ -74,8 +75,8 @@ class View extends TopNav
             </div>
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
               <div class="btn-group">
-                <a class="btn btn-outline-primary" href="?o=auth&m=create">Forgot password</a>
-                <button class="btn btn-primary" type="submit" id="m" name="m" value="list">Sign in</button>
+                <a class="btn btn-outline-primary" href="?plugin=auth&action=create">Forgot password</a>
+                <button class="btn btn-primary" type="submit" id="action" name="action" value="list">Sign in</button>
               </div>
             </div>
           </form>
@@ -85,7 +86,7 @@ class View extends TopNav
 
     public function update(array $in): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         $id = $in['id'] ?? '';
         $login = $in['login'] ?? '';
@@ -94,7 +95,7 @@ class View extends TopNav
           <h3><i class="bi bi-key"></i> Update Password</h3>
           <form action="{$this->g->cfg['self']}" method="post">
             <input type="hidden" name="c" value="{$_SESSION['c']}">
-            <input type="hidden" name="o" value="auth">
+            <input type="hidden" name="plugin" value="auth">
             <input type="hidden" name="id" value="{$id}">
             <input type="hidden" name="login" value="{$login}">
             <p class="text-center"><b>For {$login}</b></p>
@@ -114,7 +115,7 @@ class View extends TopNav
             </div>
             <div class="form-group text-right">
               <div class="btn-group">
-                <button class="btn btn-primary" type="submit" name="m" value="update">Update my password</button>
+                <button class="btn btn-primary" type="submit" name="action" value="update">Update my password</button>
               </div>
             </div>
           </form>

@@ -8,11 +8,23 @@ namespace HCP;
 
 use HCP\Db;
 
-class Util
+final class Util
 {
+    private function __construct()
+    {
+    }
+
+    public static function elog(string $content): void
+    {
+        if (defined('\HCP\DBG') && \HCP\DBG)
+        {
+            error_log($content);
+        }
+    }
+
     public static function log(string $msg = '', string $lvl = 'danger'): array
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         if ($msg)
         {
@@ -31,14 +43,14 @@ class Util
 
     public static function enc(string $v): string
     {
-        elog(__METHOD__ . "({$v})");
+        self::elog(__METHOD__ . "({$v})");
 
         return htmlentities(trim($v), ENT_QUOTES, 'UTF-8');
     }
 
     public static function esc(array $in): array
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         foreach ($in as $k => $v)
         {
@@ -49,57 +61,42 @@ class Util
         return $in;
     }
 
-    public static function ses(string $k, string $v = '', ?string $x = null): string
+    public static function ses(string $k, mixed $v = '', mixed $x = null): mixed
     {
-        elog(__METHOD__ . "({$k}, {$v}, {$x})");
+        self::elog(__METHOD__ . "({$k}, " . var_export($v, true) . ", " . var_export($x, true) . ")");
 
-        return $_SESSION[$k] = (isset($_REQUEST[$k]))
-            ? self::enc($_REQUEST[$k])
-            : (isset($_SESSION[$k])
-                ? $_SESSION[$k]
-                : ($x ?? $v));
-    }
-
-    /*
-    public static function ses(string $key, string $default = '', ?string $newValue = null): string
-    {
-        elog(__METHOD__ . "({$key}, {$default}, {$newValue})");
-
-        // If explicit new value provided, always update
-        if ($newValue !== null)
+        if (isset($_REQUEST[$k]))
         {
-            return $_SESSION[$key] = $newValue;
+            $_SESSION[$k] = is_array($_REQUEST[$k]) ? $_REQUEST[$k] : self::enc($_REQUEST[$k]);
+        }
+        elseif (!isset($_SESSION[$k]))
+        {
+            $_SESSION[$k] = $x ?? $v;
         }
 
-        // If value exists in REQUEST and differs from session, update
-        if (
-            isset($_REQUEST[$key]) &&
-            (!isset($_SESSION[$key]) || $_REQUEST[$key] !== $_SESSION[$key])
-        )
-        {
-            return $_SESSION[$key] = self::enc($_REQUEST[$key]);
-        }
-
-        // Otherwise return existing session value or default
-        return $_SESSION[$key] ?? $default;
+        return $_SESSION[$k];
     }
-    */
-    public static function cfg(object $g): void
-    {
-        elog(__METHOD__);
 
-        if (file_exists($g->cfg['file']))
+    public static function cfg(Init $init): void
+    {
+        self::elog(__METHOD__);
+
+        if (file_exists($init->config->file))
         {
-            foreach (include $g->cfg['file'] as $k => $v)
+            $loadedConfig = include $init->config->file;
+            foreach ($loadedConfig as $key => $value)
             {
-                $g->{$k} = array_merge($g->{$k}, $v);
+                if (property_exists($init->config, $key) && is_array($init->config->$key))
+                {
+                    $init->config->$key = array_merge($init->config->$key, $value);
+                }
             }
         }
     }
 
     public static function exe(string $cmd, bool $ret = false): bool
     {
-        elog(__METHOD__ . "({$cmd})");
+        self::elog(__METHOD__ . "({$cmd})");
 
         exec('sudo ' . escapeshellcmd($cmd) . ' 2>&1', $retArr, $retVal);
         util::log('<pre>' . trim(implode("\n", $retArr)) . '</pre>', $retVal ? 'danger' : 'success');
@@ -109,14 +106,14 @@ class Util
 
     public static function run(string $cmd): string
     {
-        elog(__METHOD__ . "({$cmd})");
+        self::elog(__METHOD__ . "({$cmd})");
 
         return exec('sudo ' . escapeshellcmd($cmd) . ' 2>&1');
     }
 
     public static function now(string $date1, ?string $date2 = null): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         if (!is_numeric($date1))
         {
@@ -167,14 +164,14 @@ class Util
 
     public static function is_adm(): bool
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         return isset($_SESSION['adm']);
     }
 
     public static function is_usr(mixed $id = null): bool
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         return (is_null($id))
             ? isset($_SESSION['usr'])
@@ -183,14 +180,14 @@ class Util
 
     public static function is_acl(int $acl): bool
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         return isset($_SESSION['usr']['acl']) && $_SESSION['usr']['acl'] == $acl;
     }
 
     public static function genpw(int $length = 10): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         return str_replace(
             '.',
@@ -205,7 +202,7 @@ class Util
 
     public static function get_nav(array $nav = []): array
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         return isset($_SESSION['usr'])
             ? (isset($_SESSION['adm']) ? $nav['adm'] : $nav['usr'])
@@ -214,28 +211,28 @@ class Util
 
     public static function get_cookie(string $name, string $default = ''): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         return $_COOKIE[$name] ?? $default;
     }
 
     public static function put_cookie(string $name, string $value, int $expiry = 604800): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         return setcookie($name, $value, time() + $expiry) ? $value : '';
     }
 
     public static function del_cookie(string $name): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         return self::put_cookie($name, '', -1);
     }
 
     public static function chkpw(string $pw, string $pw2 = ''): bool
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         if (strlen($pw) > 11)
         {
@@ -281,29 +278,29 @@ class Util
         return false;
     }
 
-    public static function chkapi(object $g): void
+    public static function chkapi(Init $init): void
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
-        [$apiusr, $apikey] = explode(':', $g->in['a'], 2);
+        [$apiusr, $apikey] = explode(':', $init->input['api'], 2);
 
         if (!self::is_usr($apiusr))
         { // if this user has already logged in then avoid extra DB lookup
             if (is_null(Db::$dbh))
             {
-                Db::$dbh = new Db($g->Db);
+                Db::$dbh = new Db($init->config->db);
             }
             Db::$tbl = 'accounts';
 
             if ($usr = Db::read('id,grp,acl,login,fname,lname,webpw', 'id', $apiusr, '', 'one'))
             {
-                if (9 !== $usr['acl'])
+                if ($usr['acl'] !== ACL::Suspended->value)
                 {
                     if (password_verify(html_entity_decode($apikey, ENT_QUOTES, 'UTF-8'), $usr['webpw']))
                     {
-                        elog("API login for id={$apiusr}");
+                        self::elog("API login for id={$apiusr}");
                         $_SESSION['usr'] = $usr;
-                        if (0 == $usr['acl'])
+                        if ($usr['acl'] === ACL::SuperAdmin->value)
                         {
                             $_SESSION['adm'] = $apiusr;
                         }
@@ -325,13 +322,13 @@ class Util
         }
         else
         {
-            elog("API id={$apiusr} is already logged in");
+            self::elog("API id={$apiusr} is already logged in");
         }
     }
 
-    public static function remember(object $g): void
+    public static function remember(Init $init): void
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         if (!self::is_usr())
         {
@@ -339,20 +336,20 @@ class Util
             {
                 if (is_null(Db::$dbh))
                 {
-                    Db::$dbh = new db($g->db);
+                    Db::$dbh = new Db($init->config->db);
                 }
                 Db::$tbl = 'accounts';
                 if ($usr = Db::read('id,grp,acl,login,fname,lname,cookie', 'cookie', $c, '', 'one'))
                 {
                     extract($usr);
                     $_SESSION['usr'] = $usr;
-                    if (0 == $acl)
+                    if ($acl === ACL::SuperAdmin->value)
                     {
                         $_SESSION['adm'] = $id;
                     }
                     self::log($login . ' is remembered and logged back in', 'success');
-                    self::ses('o', '', $g->in['o']);
-                    self::ses('m', '', $g->in['m']);
+                    self::ses('object', '', $init->input['object']);
+                    self::ses('method', '', $init->input['method']);
                 }
             }
         }
@@ -360,7 +357,7 @@ class Util
 
     public static function redirect(string $url, string $method = 'location', int $ttl = 5, string $msg = ''): void
     {
-        elog(__METHOD__ . "({$url})");
+        self::elog(__METHOD__ . "({$url})");
 
         if ('refresh' == $method)
         {
@@ -380,14 +377,14 @@ class Util
 
     public static function relist(): void
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
-        self::redirect('?o=' . $_SESSION['o'] . '&m=list');
+        self::redirect('?plugin=' . $_SESSION['plugin'] . '&action=list');
     }
 
     public static function numfmt(float $size, ?int $precision = null): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         if (0 == $size)
         {
@@ -416,7 +413,7 @@ class Util
     // numfmt() was wrong, we want MB not MiB
     public static function numfmtsi(float $size, int $precision = 2): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         if (0 == $size)
         {
@@ -430,7 +427,7 @@ class Util
 
     public static function is_valid_domain_name(string $domainname): bool
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         $domainname = idn_to_ascii($domainname);
 
@@ -441,7 +438,7 @@ class Util
 
     public static function mail_password(string $pw, string $hash = 'SHA512-CRYPT'): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         $salt_str = bin2hex(openssl_random_pseudo_bytes(8));
 
@@ -452,7 +449,7 @@ class Util
 
     public static function sec2time(int $seconds): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         $dtF = new \DateTime('@0');
         $dtT = new \DateTime("@{$seconds}");
@@ -462,14 +459,14 @@ class Util
 
     public static function is_post(): bool
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         if ('POST' === $_SERVER['REQUEST_METHOD'])
         {
             if (!isset($_POST['c']) || $_SESSION['c'] !== $_POST['c'])
             {
                 self::log('Possible CSRF attack');
-                self::redirect('?o=' . $_SESSION['o'] . '&m=list');
+                self::redirect('?plugin=' . $_SESSION['plugin'] . '&action=list');
             }
 
             return true;
@@ -480,7 +477,7 @@ class Util
 
     public static function inc_soa(string $soa): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         $ary = explode(' ', $soa);
         $ymd = date('Ymd');
@@ -495,7 +492,7 @@ class Util
 
     public static function random_token(int $length = 32): string
     {
-        elog(__METHOD__);
+        self::elog(__METHOD__);
 
         $random_base64 = base64_encode(random_bytes($length));
         $random_base64 = str_replace(['+', '/', '='], '', $random_base64);

@@ -1,18 +1,19 @@
 <?php
 
 declare(strict_types=1);
-// lib/php/themes/bootstrap/processes.php 20170225 - 20250128
+// Created: 20170225 - Updated: 20250202
 // Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP\Plugins\Processes;
 
 use HCP\Theme;
+use HCP\Util;
 
 class View extends Theme
 {
     public function list(array $in = []): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         // Check if this is an AJAX request
         if (

@@ -1,18 +1,19 @@
 <?php
 
 declare(strict_types=1);
-// lib/php/themes/bootstrap/infosys.php 20170225 - 20230604
-// Copyright (C) 2015-2023 Mark Constable <markc@renta.net> (AGPL-3.0)
+// Created: 20170225 - Updated: 20250202
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP\Plugins\InfoSys;
 
+use HCP\Util;
 use HCP\Theme;
 
 class View extends Theme
 {
     public function list(array $in = []): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         extract($in);
 

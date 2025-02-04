@@ -1,34 +1,56 @@
 <?php
 
 declare(strict_types=1);
-// lib/php/themes/bootstrap/theme.php 20150101 - 20250128
+// Created: 20250101 - Updated: 20250202
 // Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP\Themes;
 
 use HCP\Util;
+use HCP\Theme;
+use HCP\Init;
 
-class TopNav
+class TopNav extends Theme
 {
-    protected array $defaultNav = [];
-    protected object $g;
+    protected ?array $nav2 = null;
 
-    public function __construct(object $g)
+    public function __construct(Init $init)
     {
-        $this->g = $g;
+        parent::__construct($init);
+    }
+
+    public function html(): string
+    {
+        Util::elog(__METHOD__);
+
+        extract($this->init->output, EXTR_SKIP);
+
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{$doc}</title>{$css}
+  </head>
+  <body>{$log}{$head}{$main}{$foot}{$js}
+  </body>
+</html>
+HTML;
     }
 
     public function css(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        return '
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-        <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-        <style>
+        return <<<HTML
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
 body{min-height:75rem;padding-top:5rem;}
 table,form{width:100%;}
 table.dataTable{border-collapse: collapse !important;}
@@ -91,70 +113,71 @@ table.dataTable{border-collapse: collapse !important;}
     align-items: flex-end;
   }
 }
-        </style>';
+    </style>
+HTML;
     }
 
     public function head(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        return sprintf(
-            '
+        return <<<HTML
+
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top bg-dark">
       <div class="container">
-        <a class="navbar-brand" href="%s">
-          <b><i class="bi bi-server" aria-hidden="true"></i> %s</b>
+        <a class="navbar-brand" href="{$this->init->config->self}">
+          <b><i class="bi bi-server" aria-hidden="true"></i> {$this->init->output['head']}</b>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsDefault" aria-controls="navbarsDefault" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarsDefault">
-          <ul class="navbar-nav me-auto">%s</ul>
-          <ul class="navbar-nav ms-auto">%s</ul>
+          <ul class="navbar-nav me-auto">{$this->init->output['nav1']}</ul>
+          <ul class="navbar-nav ms-auto">{$this->init->output['nav3']}</ul>
         </div>
       </div>
-    </nav>',
-            $this->g->cfg['self'],
-            $this->g->out['head'],
-            $this->g->out['nav1'],
-            $this->g->out['nav3']
-        );
+    </nav>
+HTML;
     }
 
     public function nav1(array $a = []): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        $a = $a[0] ?? Util::get_nav($this->g->nav1);
-        $o = '?o=' . $this->g->in['o'];
+        $a = isset($a[0]) ? $a : Util::get_nav($this->init->config->nav1);
+        $o = '?plugin=' . $this->init->input['plugin'];
         $t = '?t=' . Util::ses('t');
 
         return implode('', array_map(
             fn($n) =>
             is_array($n[1])
                 ? $this->nav_dropdown($n)
-                : sprintf(
-                    '<li class="nav-item%s"><a class="nav-link%s" href="%s">%s%s</a></li>',
-                    $o === $n[1] || $t === $n[1] ? ' active' : '',
-                    $o === $n[1] || $t === $n[1] ? ' active' : '',
-                    $n[1],
-                    $n[2] ?? '' ? '<i class="' . $n[2] . '" aria-hidden="true"></i> ' : '',
-                    $n[0]
-                ),
+                : $this->nav_link($n, $o, $t),
             $a
         ));
     }
 
+    private function nav_link(array $n, string $o, string $t): string
+    {
+        $active = $o === $n[1] || $t === $n[1] ? ' active' : '';
+        $icon = $n[2] ?? '' ? '<i class="' . $n[2] . '" aria-hidden="true"></i> ' : '';
+
+        return <<<HTML
+
+        <li class="nav-item{$active}"><a class="nav-link{$active}" href="{$n[1]}">{$icon}{$n[0]}</a></li>
+HTML;
+    }
+
     public function nav2(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        return $this->nav_dropdown(['Theme', $this->g->nav2, 'fa fa-th fa-fw']);
+        return $this->nav_dropdown(['Theme', $this->init->config->nav2, 'bi bi-grid']);
     }
 
     public function nav3(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         if (!Util::is_usr())
         {
@@ -162,117 +185,121 @@ table.dataTable{border-collapse: collapse !important;}
         }
 
         $usr = [
-            ['Change Profile', '?o=Accounts&m=read&i=' . $_SESSION['usr']['id'], 'fas fa-user fa-fw'],
-            ['Change Password', '?o=Auth&m=update&i=' . $_SESSION['usr']['id'], 'fas fa-key fa-fw'],
-            ['Sign out', '?o=Auth&m=delete', 'fas fa-sign-out-alt fa-fw']
+            ['Change Profile', '?plugin=Accounts&action=read&i=' . $_SESSION['usr']['id'], 'bi bi-person'],
+            ['Change Password', '?plugin=Auth&action=update&i=' . $_SESSION['usr']['id'], 'bi bi-key'],
+            ['Sign out', '?plugin=Auth&action=delete', 'bi bi-box-arrow-right']
         ];
 
         if (Util::is_adm() && !Util::is_acl(0))
         {
-            $usr[] = ['Switch to sysadm', '?o=Accounts&m=switch_user&i=' . $_SESSION['adm'], 'fas fa-user fa-fw'];
+            $usr[] = ['Switch to sysadm', '?plugin=Accounts&action=switch_user&i=' . $_SESSION['adm'], 'bi bi-person-gear'];
         }
 
-        return $this->nav_dropdown([$_SESSION['usr']['login'], $usr, 'fas fa-user fa-fw']);
+        return $this->nav_dropdown([$_SESSION['usr']['login'], $usr, 'bi bi-person-circle']);
     }
 
     public function nav_dropdown(array $a = []): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        $o = '?o=' . $this->g->in['o'];
+        $o = '?plugin=' . $this->init->input['plugin'];
         $icon = $a[2] ?? '';
+        $iconHtml = $icon ? '<i class="' . $icon . '" aria-hidden="true"></i> ' : '';
+        $dropdownItems = implode('', array_map(fn($n) => $this->dropdown_item($n, $o), $a[1]));
 
-        return sprintf(
-            '
+        return <<<HTML
+
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">%s%s</a>
-              <div class="dropdown-menu">%s</div>
-            </li>',
-            $icon ? sprintf('<i class="%s" aria-hidden="true"></i> ', $icon) : '',
-            $a[0],
-            implode('', array_map(fn($n) => sprintf(
-                '
-                <a class="dropdown-item%s" href="%s">%s%s</a>',
-                $o === $n[1] ? ' active' : '',
-                $n[1],
-                $n[2] ?? '' ? sprintf('<i class="%s" aria-hidden="true"></i> ', $n[2]) : '',
-                $n[0]
-            ), $a[1]))
-        );
+              <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{$iconHtml}{$a[0]}</a>
+              <div class="dropdown-menu">{$dropdownItems}</div>
+            </li>
+HTML;
+    }
+
+    private function dropdown_item(array $n, string $o): string
+    {
+        $active = $o === $n[1] ? ' active' : '';
+        $icon = $n[2] ?? '' ? '<i class="' . $n[2] . '" aria-hidden="true"></i> ' : '';
+
+        return <<<HTML
+
+                <a class="dropdown-item{$active}" href="{$n[1]}">{$icon}{$n[0]}</a>
+HTML;
     }
 
     public function main(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        return '
+        return <<<HTML
+
     <main class="container">
-      <div class="row">' . $this->g->out['log'] . $this->g->out['main'] . '
+      <div class="row">{$this->init->output['log']}{$this->init->output['main']}
       </div>
-    </main>';
+    </main>
+HTML;
     }
-    /*
+
     public function foot(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        return '[TopNav] ' . $this->g->out['foot'];
+        return <<<HTML
+
+    <footer class="text-center p-4">
+        [TopNav] {$this->init->output['foot']}
+    </footer>
+HTML;
     }
-    */
+
     public function js(): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        return '
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-        <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-        <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>';
+        return <<<HTML
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+HTML;
     }
 
     public function modal(array $ary): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         ['id' => $id, 'title' => $title, 'body' => $body, 'action' => $action] = $ary;
         $hidden = $ary['hidden'] ?? '';
-        $footer = isset($ary['footer']) ? sprintf('
+        $footer = isset($ary['footer']) ? <<<HTML
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    %s
-                </div>', $ary['footer']) : '';
+                    {$ary['footer']}
+                </div>
+HTML : '';
 
-        return sprintf(
-            '
-        <div class="modal fade" id="%1$s" tabindex="-1" aria-labelledby="%1$s-label" aria-hidden="true">
+        return <<<HTML
+
+        <div class="modal fade" id="{$id}" tabindex="-1" aria-labelledby="{$id}-label" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="%1$s-label">%2$s</h5>
+                        <h5 class="modal-title" id="{$id}-label">{$title}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <form method="post" action="%3$s">
-                        <input type="hidden" name="c" value="%4$s">
-                        <input type="hidden" name="o" value="%5$s">
-                        <input type="hidden" name="m" value="%6$s">
-                        <input type="hidden" name="i" value="%7$s">%8$s
-                        <div class="modal-body">%9$s</div>
-                        %10$s
+                    <form method="post" action="{$this->init->config->self}">
+                        <input type="hidden" name="c" value="{$_SESSION['c']}">
+                        <input type="hidden" name="plugin" value="{$this->init->input['o']}">
+                        <input type="hidden" name="action" value="{$action}">
+                        <input type="hidden" name="i" value="{$this->init->input['i']}">{$hidden}
+                        <div class="modal-body">{$body}</div>
+                        {$footer}
                     </form>
                 </div>
             </div>
-        </div>',
-            $id,
-            $title,
-            $this->g->cfg['self'],
-            $_SESSION['c'],
-            $this->g->in['o'],
-            $action,
-            $this->g->in['i'],
-            $hidden,
-            $body,
-            $footer
-        );
+        </div>
+HTML;
     }
 }

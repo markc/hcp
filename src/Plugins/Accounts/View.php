@@ -1,19 +1,20 @@
 <?php
 
 declare(strict_types=1);
-// lib/php/themes/bootstrap5/accounts.php 20170225 - 20240906
-// Copyright (C) 2015-2024 Mark Constable <markc@renta.net> (AGPL-3.0)
+// Created: 20170225 - Updated: 20250202
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP\Plugins\Accounts;
 
-use HCP\Theme;
 use HCP\Db;
+use HCP\Util;
+use HCP\Theme;
 
 class View extends Theme
 {
     public function create(array $in): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         return $this->modal([
             'id'        => 'createmodal',
@@ -27,7 +28,7 @@ class View extends Theme
 
     public function read(array $in): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         return $this->modal([
             'id'        => 'readmodal',
@@ -36,15 +37,15 @@ class View extends Theme
             'body'      => $this->modal_body($in),
             'footer'    => '
                   <button type="submit" class="btn btn-primary">Update</button>
-                  <a href="?o=Accounts&m=delete&i=' . $this->g->in['i'] . '&x=modal" class="btn btn-danger bslink" data-bs-dismiss="modal">Delete</a>'
+                  <a href="?plugin=Accounts&action=delete&i=' . $this->g->input['i'] . '&x=modal" class="btn btn-danger bslink" data-bs-dismiss="modal">Delete</a>'
         ]);
     }
 
     public function delete(): ?string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
-        $usr = Db::read('login', 'id', $this->g->in['i'], '', 'one');
+        $usr = Db::read('login', 'id', $this->g->input['i'], '', 'one');
 
         return $this->modal([
             'id'        => 'deletemodal',
@@ -52,19 +53,19 @@ class View extends Theme
             'action'    => 'delete',
             'body'      => sprintf('<p class="text-center">Are you sure you want to remove this user?<br><b>%s</b></p>', $usr['login']),
             'footer'    => '<button type="submit" class="btn btn-danger">Remove</button>',
-            'hidden'    => sprintf('<input type="hidden" name="i" value="%s">', $this->g->in['i'])
+            'hidden'    => sprintf('<input type="hidden" name="i" value="%s">', $this->g->input['i'])
         ]);
     }
 
     public function list(array $in = []): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         return <<<HTML
         <div class="row">
             <h1>
                 <i class="bi bi-people-fill"></i> Accounts
-                <a href="?o=Accounts&m=create&x=modal" class="bslink" title="Add new account">
+                <a href="?plugin=Accounts&action=create&x=modal" class="bslink" title="Add new account">
                     <small><i class="bi bi-plus-circle"></i></small>
                 </a>
             </h1>
@@ -91,7 +92,7 @@ class View extends Theme
             var table = $("#accounts").DataTable({
                 "processing": true,
                 "serverSide": true,
-                "ajax": "?o=Accounts&m=list&x=json&f=json",
+                "ajax": "?plugin=Accounts&action=list&x=json&f=json",
                 "scrollX": true,
                 "info": true,
                 "columnDefs": [
@@ -129,7 +130,7 @@ class View extends Theme
 
     private function modal_body(array $in): string
     {
-        elog(__METHOD__);
+        Util::elog(__METHOD__);
 
         $acl = $_SESSION['usr']['acl'];
         $grp = $_SESSION['usr']['grp'];
