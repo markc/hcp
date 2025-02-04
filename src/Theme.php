@@ -27,18 +27,17 @@ class Theme
 
         extract($this->controller->output, EXTR_SKIP);
 
-        return <<<HTML
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>{$doc}</title>{$css}
-            </head>
-            <body>{$log}{$nav1}{$head}{$main}{$foot}{$js}
-            </body>
-        </html>
-        HTML;
+        return '
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>' . $doc . '</title>' . $css . '
+    </head>
+    <body>' . $head . $log . $nav1 . $main . $foot . $js . '
+    </body>
+</html>';
     }
 
     public function nav1(): string
@@ -61,9 +60,7 @@ class Theme
         $i = $n[2] ?? '';
         $i = $i ? "<i class=\"{$i}\"></i> " : '';
 
-        return <<<HTML
-       <li class="nav-item{$c}"><a class="nav-link" href="{$n[1]}">{$i}{$n[0]}</a></li>
-       HTML;
+        return '<li class="nav-item' . $c . '"><a class="nav-link" href="' . $n[1] . '">' . $i . $n[0] . '</a></li>';
     }
 
     public function nav_dropdown(array $a): string
@@ -75,12 +72,10 @@ class Theme
 
         $items = implode('', array_map(fn($n) => $this->nav_item($n), $a[1]));
 
-        return <<<HTML
-       <li class="nav-item dropdown">
-         <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">{$i}{$a[0]}</a>
-         <div class="dropdown-menu">{$items}</div>
-       </li>
-       HTML;
+        return '<li class="nav-item dropdown">
+         <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">' . $i . $a[0] . '</a>
+         <div class="dropdown-menu">' . $items . '</div>
+       </li>';
     }
 
     public function list(array $items): string
@@ -100,16 +95,14 @@ class Theme
             $content = htmlspecialchars($item['content'] ?? '');
             $plugin = $this->controller->input['plugin'];
 
-            $list .= <<<HTML
-           <a href="?plugin={$plugin}&action=read&item={$id}" class="list-group-item">
-               <h5>Item #{$id}</h5>
-               <p>{$content}</p>
-               <small>{$updated}</small>
-           </a>
-           HTML;
+            $list .= '<a href="?plugin=' . $plugin . '&action=read&item=' . $id . '" class="list-group-item">
+               <h5>Item #' . $id . '</h5>
+               <p>' . $content . '</p>
+               <small>' . $updated . '</small>
+           </a>';
         }
 
-        return "<div class='list-group'>$list</div>";
+        return '<div class="list-group">' . $list . '</div>';
     }
 
     public function create(array $input): string
@@ -119,13 +112,11 @@ class Theme
         $csrf = $_SESSION['csrf_token'] ?? '';
         $content = $input['content'] ?? '';
 
-        return <<<HTML
-       <form method="post">
-           <input type="hidden" name="csrf_token" value="{$csrf}">
-           <textarea name="content">{$content}</textarea>
+        return '<form method="post">
+           <input type="hidden" name="csrf_token" value="' . $csrf . '">
+           <textarea name="content">' . $content . '</textarea>
            <button type="submit">Create</button>
-       </form>
-       HTML;
+       </form>';
     }
 
     public function read(array $data): string
@@ -140,14 +131,12 @@ class Theme
         $id = $data['id'] ?? '0';
         $content = htmlspecialchars($data['content'] ?? '');
 
-        return <<<HTML
-       <div class="card">
+        return '<div class="card">
            <div class="card-body">
-               <h5>Item #{$id}</h5>
-               <p>{$content}</p>
+               <h5>Item #' . $id . '</h5>
+               <p>' . $content . '</p>
            </div>
-       </div>
-       HTML;
+       </div>';
     }
 
     public function __toString(): string
