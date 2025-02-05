@@ -8,6 +8,7 @@ namespace HCP\Themes;
 
 use HCP\Util;
 use HCP\Theme;
+use HCP\PluginNav;
 
 class TopNav extends Theme
 {
@@ -29,7 +30,7 @@ class TopNav extends Theme
 </html>';
     }
 
-    public function css(): string
+    public function css(array $in = []): string
     {
         Util::elog(__METHOD__);
 
@@ -118,7 +119,7 @@ class TopNav extends Theme
         </style>';
     }
 
-    public function head(): string
+    public function head(array $in = []): string
     {
         Util::elog(__METHOD__);
 
@@ -132,9 +133,9 @@ class TopNav extends Theme
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarsDefault">
-                    <ul class="navbar-nav me-auto">' . $this->controller->output['nav1'] . '</ul>
+                    <ul class="navbar-nav me-auto">' . $this->nav2() . '</ul>
                     <ul class="navbar-nav ms-auto">' . $this->controller->output['nav3'] . '</ul>
-                </div>
+               </div>
             </div>
         </nav>';
     }
@@ -165,14 +166,15 @@ class TopNav extends Theme
             <li class="nav-item' . $active . '"><a class="nav-link' . $active . '" href="' . $n[1] . '">' . $icon . $n[0] . '</a></li>';
     }
 
-    public function nav2(): string
+    public function nav2(array $in = []): string
     {
         Util::elog(__METHOD__);
 
-        return $this->nav_dropdown(['Theme', $this->controller->config->nav2, 'bi bi-grid']);
+        $pluginNav = new PluginNav(__DIR__ . '/../Plugins');
+        return $this->nav1($pluginNav->scanPlugins());
     }
 
-    public function nav3(): string
+    public function nav3(array $in = []): string
     {
         Util::elog(__METHOD__);
 
@@ -220,7 +222,7 @@ class TopNav extends Theme
                         <a class="dropdown-item' . $active . '" href="' . $n[1] . '">' . $icon . $n[0] . '</a>';
     }
 
-    public function main(): string
+    public function main(array $in = []): string
     {
         Util::elog(__METHOD__);
 
@@ -230,7 +232,7 @@ class TopNav extends Theme
         </main>';
     }
 
-    public function foot(): string
+    public function foot(array $in = []): string
     {
         Util::elog(__METHOD__);
 
@@ -241,7 +243,7 @@ class TopNav extends Theme
         </footer>';
     }
 
-    public function js(): string
+    public function js(array $in = []): string
     {
         Util::elog(__METHOD__);
 

@@ -1,0 +1,6 @@
+{
+    "name": "Auth",
+    "icon": "bi bi-people",
+    "order": 10,
+    "group": "Admin"
+}

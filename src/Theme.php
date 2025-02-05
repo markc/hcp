@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-// Created: 20150101 - Updated: 20250204
+// Created: 20150101 - Updated: 20250205
 // Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 namespace HCP;
@@ -21,64 +21,194 @@ class Theme
         $this->parentTheme = $parentTheme;
     }
 
+    public function __toString(): string
+    {
+        Util::elog(__METHOD__);
+
+        return $this->buf;
+    }
+
     public function html(): string
     {
         Util::elog(__METHOD__);
 
         extract($this->controller->output, EXTR_SKIP);
 
-        return '
-<!DOCTYPE html>
+        return '<!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>' . $doc . '</title>' . $css . '
     </head>
-    <body>' . $head . $log . $nav1 . $main . $foot . $js . '
+    <body>' . $head . $log . $main . $foot . $js . '
     </body>
 </html>';
     }
 
-    public function nav1(): string
+    // Plugin Actions Views
+
+    public function create(array $in = []): string
     {
         Util::elog(__METHOD__);
 
-        $nav = Util::get_nav($this->controller->config->nav1);
-        return implode('', array_map(fn($n) => $this->nav_item($n), $nav));
+        return __METHOD__;
     }
 
-    public function nav_item(array $n): string
-    {
-        if (is_array($n[1]))
-        {
-            return $this->nav_dropdown($n);
-        }
-
-        $o = '?plugin=' . $this->controller->input['plugin'];
-        $c = $o === $n[1] ? ' active' : '';
-        $i = $n[2] ?? '';
-        $i = $i ? "<i class=\"{$i}\"></i> " : '';
-
-        return '<li class="nav-item' . $c . '"><a class="nav-link" href="' . $n[1] . '">' . $i . $n[0] . '</a></li>';
-    }
-
-    public function nav_dropdown(array $a): string
+    public function read(array $in = []): string
     {
         Util::elog(__METHOD__);
 
-        $i = $a[2] ?? '';
-        $i = $i ? "<i class=\"{$i}\"></i> " : '';
-
-        $items = implode('', array_map(fn($n) => $this->nav_item($n), $a[1]));
-
-        return '<li class="nav-item dropdown">
-         <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">' . $i . $a[0] . '</a>
-         <div class="dropdown-menu">' . $items . '</div>
-       </li>';
+        return __METHOD__;
     }
 
-    public function list(array $items): string
+    public function update(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return __METHOD__;
+    }
+
+    public function delete(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return __METHOD__;
+    }
+
+    public function list(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return __METHOD__;
+    }
+
+    // HTML Partial Views
+
+    public function doc(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return $this->controller->output['doc'];
+    }
+
+    public function css(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return '
+        <style>
+            body {
+                width: 60rem;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            /*
+            nav, header, main, footer, pre, div {
+                border: dashed 1px red;
+                margin: 1rem;
+                padding: 1rem;
+            }
+            */
+            footer {
+                text-align: center;
+            }
+
+            @media screen and (max-width: 768px) {
+                body {
+                    width: 100%;
+                    margin: 0;
+                }
+                
+                nav, header, main, footer, pre, div {
+                    width: auto;
+                    margin: 1rem;
+                }
+            }
+        </style>';
+    }
+
+    public function log(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return '
+
+        <div>
+            ' . $this->controller->output['log']  . '
+        </div>';
+    }
+
+    public function nav1(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return implode('', array_map(
+            fn($n) => is_array($n[1])
+                ? '
+                <select name="' . $n[0] . '" id="' . $n[0] . '" onchange="if(this.value) window.location.href=this.value">'
+                . '<option value="">- ' . $n[0] . ' -</option>'
+                . implode('', array_map(fn($v) => '
+                    <option value="' . $v[1] . '">' . $v[0] . '</option>', $n[1]))
+                . '
+                </select>'
+                : '
+                <a href="' . $n[1] . '">' . $n[0] . '</a>',
+            Util::get_nav($this->controller->config->nav1)
+        ));
+    }
+
+    public function nav2(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return __METHOD__;
+    }
+
+    public function nav3(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return __METHOD__;
+    }
+
+    public function head(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return '
+        <header>
+            <h1><a href="?plugin=Home">' . $this->controller->output['doc'] . '</a></h1>
+            <nav>' . $this->nav1() . '
+            </nav>
+        </header>';
+    }
+
+    public function main(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return '
+
+        <main>
+            ' . $this->controller->output['main'] . '
+        </main>';
+    }
+
+    public function foot(array $in = []): string
+    {
+        Util::elog(__METHOD__);
+
+        return '
+
+        <footer>
+            ' . $this->controller->output['foot'] . '
+        </footer>';
+    }
+
+    // The original Theme CRUDL methods
+
+    public function list2(array $items): string
     {
         Util::elog(__METHOD__);
 
@@ -105,7 +235,7 @@ class Theme
         return '<div class="list-group">' . $list . '</div>';
     }
 
-    public function create(array $input): string
+    public function create2(array $input): string
     {
         Util::elog(__METHOD__);
 
@@ -119,7 +249,7 @@ class Theme
        </form>';
     }
 
-    public function read(array $data): string
+    public function read2(array $data): string
     {
         Util::elog(__METHOD__);
 
@@ -137,12 +267,5 @@ class Theme
                <p>' . $content . '</p>
            </div>
        </div>';
-    }
-
-    public function __toString(): string
-    {
-        Util::elog(__METHOD__);
-
-        return $this->buf;
     }
 }

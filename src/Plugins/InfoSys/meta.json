@@ -1,0 +1,6 @@
+{
+    "name": "System Info",
+    "icon": "bi bi-speedometer",
+    "order": 3,
+    "group": "Tools"
+}

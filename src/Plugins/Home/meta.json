@@ -1,6 +1,6 @@
 {
     "name": "Home",
-    "description": "The main home page plugin",
-    "icon": "bi bi-house fw",
-    "order": 1
+    "icon": "bi bi-house",
+    "order": 1,
+    "group": ""
 }
