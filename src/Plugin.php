@@ -16,6 +16,7 @@ class Plugin
     )
     {
         Util::elog(__METHOD__);
+        Util::elog(var_export($this->controller, true));
 
         $this->isValid = $this->validateAccess();
         if ($this->isValid)

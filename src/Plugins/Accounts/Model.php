@@ -23,70 +23,105 @@ class Model extends Plugin
         'altemail'  => '',
     ];
 
-    protected function create(): string
+    public function create(): array
     {
         Util::elog(__METHOD__);
 
-        if (Util::is_adm()) return parent::create();
-        Util::log('You are not authorized to perform this action, please contact your administrator.');
-        Util::relist();
-        return '';
+        if (!Util::is_adm())
+        {
+            return [
+                'status' => 'error',
+                'message' => 'You are not authorized to perform this action, please contact your administrator.'
+            ];
+        }
+
+        return parent::create();
     }
 
-    protected function read(): string
+    public function read(): array
     {
         Util::elog(__METHOD__);
 
-        $usr = Db::read('*', 'id', $this->g->input['i'], '', 'one');
+        $usr = Db::read('*', 'id', $this->controller->input['i'], '', 'one');
         if (!$usr)
         {
-            Util::log('User not found.');
-            Util::relist();
-            return '';
+            return [
+                'status' => 'error',
+                'message' => 'User not found.'
+            ];
         }
 
         if (Util::is_acl(0))
         {
-            // superadmin
+            // superadmin - allow access
+            return [
+                'status' => 'success',
+                'message' => $usr
+            ];
         }
         elseif (Util::is_acl(1))
-        { // normal admin
+        {
+            // normal admin
             if ((int)$_SESSION['usr']['grp'] !== (int)$usr['grp'])
             {
-                Util::log('You are not authorized to perform this action.');
-                Util::relist();
-                return '';
+                return [
+                    'status' => 'error',
+                    'message' => 'You are not authorized to perform this action.'
+                ];
             }
         }
         else
-        { // Other users
+        {
+            // Other users
             if ((int)$_SESSION['usr']['id'] !== (int)$usr['id'])
             {
-                Util::log('You are not authorized to perform this action.');
-                Util::relist();
-                return '';
+                return [
+                    'status' => 'error',
+                    'message' => 'You are not authorized to perform this action.'
+                ];
             }
         }
-        return $this->g->t->read($usr);
+
+        return [
+            'status' => 'success',
+            'message' => $usr
+        ];
     }
 
-    protected function delete(): string
+    public function update(): array
+    {
+        Util::elog(__METHOD__);
+        // Add your update logic here
+        return [
+            'status' => 'success',
+            'message' => 'Update operation'
+        ];
+    }
+
+    public function delete(): array
     {
         Util::elog(__METHOD__);
 
         if (Util::is_post())
         {
             parent::delete();
-            return '';
+            return [
+                'status' => 'success',
+                'message' => 'Delete operation completed'
+            ];
         }
-        return $this->g->t->delete();
+
+        return [
+            'status' => 'success',
+            'message' => 'Confirm deletion'
+        ];
     }
 
-    protected function list(): string
+    public function list(): array
     {
         Util::elog(__METHOD__);
 
-        if ($this->g->input['f'] === 'json')
+        if ($this->controller->input['f'] === 'json')
         {
             $columns = [
                 ['dt' => null, 'db' => 'id'],
@@ -99,34 +134,47 @@ class Model extends Plugin
                 ['dt' => 3, 'db' => 'altemail'],
                 ['dt' => 4, 'db' => 'acl', 'formatter' => function ($d): string
                 {
-                    return $this->g->acl[is_string($d) ? (int)$d : $d];
+                    return is_string($d) ? (int)$d : $d;
                 }],
                 ['dt' => 5, 'db' => 'grp'],
             ];
-            $this->g->out['json'] = Db::simple($_GET, 'accounts', 'id', $columns);
-            return '';
+            return [
+                'status' => 'success',
+                'message' => Db::simple($_GET, 'accounts', 'id', $columns)
+            ];
         }
-        return $this->g->t->list($this->in);
+
+        return [
+            'status' => 'success',
+            'message' => Db::read('*', '', '', 'ORDER BY `updated` DESC')
+        ];
     }
 
-    protected function switch_user(): string
+    public function switch_user(): array
     {
         Util::elog(__METHOD__);
 
-        if (Util::is_adm() && !is_null($this->g->input['i']))
+        if (!Util::is_adm() || is_null($this->controller->input['i']))
         {
-            $usr = Db::read('id,acl,grp,login,fname,lname,webpw,cookie', 'id', $this->g->input['i'], '', 'one');
-            if ($usr)
-            {
-                $_SESSION['usr'] = $usr;
-                Util::log('Switch to user: ' . $usr['login'], 'success');
-            }
+            return [
+                'status' => 'error',
+                'message' => 'Not authorized to switch users'
+            ];
         }
-        else
+
+        $usr = Db::read('id,acl,grp,login,fname,lname,webpw,cookie', 'id', $this->controller->input['i'], '', 'one');
+        if ($usr)
         {
-            Util::log('Not authorized to switch users');
+            $_SESSION['usr'] = $usr;
+            return [
+                'status' => 'success',
+                'message' => 'Switch to user: ' . $usr['login']
+            ];
         }
-        Util::relist();
-        return '';
+
+        return [
+            'status' => 'error',
+            'message' => 'User not found'
+        ];
     }
 }

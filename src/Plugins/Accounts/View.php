@@ -8,9 +8,8 @@ namespace HCP\Plugins\Accounts;
 
 use HCP\Db;
 use HCP\Util;
-use HCP\Theme;
 
-class View extends Theme
+class View
 {
     public function create(array $in): string
     {
