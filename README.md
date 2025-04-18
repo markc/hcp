@@ -1,4 +1,4 @@
-# NetServa HCP (RC1)
+# NetServa HCP (original version)
 
 This is an ultra simple PHP based **Hosting Control Panel** for a lightweight
 Mail, Web and DNS server on an uptodate Ubuntu Server. It depends on the
