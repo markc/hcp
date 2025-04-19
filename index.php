@@ -1,8 +1,8 @@
 <?php
 
 declare(strict_types=1);
-// index.php 20150101 - 20230604
-// Copyright (C) 2015-2023 Mark Constable <markc@renta.net> (AGPL-3.0)
+// Created: 20150101 - Updated: 20250419
+// Copyright (C) 2015-2025 Mark Constable <markc@renta.net> (AGPL-3.0)
 
 const DS = DIRECTORY_SEPARATOR;
 const INC = __DIR__ . DS . 'lib' . DS . 'php' . DS;
@@ -55,7 +55,7 @@ echo new Init(new class()
         'end' => '',
     ];
     public $db = [
-        'host' => '127.0.0.1', // DB site
+        'host' => 'localhost', // DB site
         'name' => 'sysadm',    // DB name
         'pass' => 'lib' . DS . '.ht_pw', // MySQL password override
         'path' => '/var/lib/sqlite/sysadm/sysadm.db', // SQLite DB
@@ -96,7 +96,7 @@ echo new Init(new class()
     ];
     public $nav2 = [];
     public $dns = [
-        'a' => '127.0.0.1',
+        'a' => 'localhost',
         'mx' => '',
         'ns1' => 'ns1.',
         'ns2' => 'ns2.',
@@ -111,7 +111,7 @@ echo new Init(new class()
             'ttl' => 3600,
         ],
         'db' => [
-            'host' => '127.0.0.1', // Alt DNS DB site
+            'host' => 'localhost', // Alt DNS DB site
             'name' => 'pdns',      // Alt DNS DB name
             'pass' => 'lib' . DS . '.ht_dns_pw', // MySQL DNS password override
             'path' => '/var/lib/sqlite/sysadm/pdns.db', // DNS SQLite DB
